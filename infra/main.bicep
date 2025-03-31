@@ -119,7 +119,7 @@ param seed string = newGuid()
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
-var tags = { 'azd-env-name': environmentName }
+var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P' }
 
 var agentID = !empty(aiAgentID) ? aiAgentID : ''
 
