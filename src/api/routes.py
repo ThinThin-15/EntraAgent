@@ -44,10 +44,14 @@ router = fastapi.APIRouter()
 def get_ai_client(request: Request) -> AIProjectClient:
     return request.app.state.ai_client
 
-
 def get_agent(request: Request) -> Agent:
     return request.app.state.agent
 
+def get_feature_manager(request: Request):
+    return getattr(request.app.state, "feature_manager", None)
+
+def get_app_config(request: Request):
+    return getattr(request.app.state, "app_config", None)
 
 def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
@@ -135,6 +139,18 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+async def get_agent_variant(feature_manager, ai_client: AIProjectClient) -> str:
+    if feature_manager:
+        agent_variant = feature_manager.get_variant("my-agent")
+        if agent_variant and agent_variant.configuration:
+            try:
+                agent_variant = await ai_client.agents.get_agent(agent_variant.configuration)        
+                logger.info(f"Using agent variant: {agent_variant.id}")
+                return agent_variant.id
+            except Exception as e:
+                logger.error(f"Error retrieving agent variant with Id {agent_variant.id}. {e}")
+    return None
+
 async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:
     logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
     try:
@@ -211,7 +227,13 @@ async def chat(
     request: Request,
     ai_client : AIProjectClient = Depends(get_ai_client),
     agent : Agent = Depends(get_agent),
+    feature_manager = Depends(get_feature_manager),
+    app_config = Depends(get_app_config),
 ):
+    # Refresh config if configured 
+    #if app_config:
+        #app_config.refresh()
+    
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
     agent_id = request.cookies.get('agent_id')
@@ -229,7 +251,8 @@ async def chat(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    agent_id = agent.id
+    #agent_id = await get_agent_variant(feature_manager, ai_client) or agent.id    
+    agent_id = agent.id    
 
     # Parse the JSON from the request.
     try:

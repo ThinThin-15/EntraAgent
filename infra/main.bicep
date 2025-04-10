@@ -108,13 +108,16 @@ param useApplicationInsights bool = true
 @description('Do we want to use the Azure AI Search')
 param useSearchService bool = false
 
+@description('Id of the user or app to assign application roles')
+param principalId string = ''
+
 @description('Random seed to be used during generation of new resources suffixes.')
-param seed string = newGuid()
+param seed string = '' //newGuid() why Guid?
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
-var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P' }
+var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P' } // TODO: remove ExP tag
 
 var agentID = !empty(aiAgentID) ? aiAgentID : ''
 
@@ -388,6 +391,28 @@ module backendRoleAzureAIDeveloperRG 'core/security/role.bicep' = {
   }
 }
 
+// App Configuration
+module configStore 'core/config/configstore.bicep' = {
+  name: 'config-store'
+  scope: rg
+  params: {
+    location: location
+    name: '${abbrs.appConfigurationStores}${resourceToken}'
+    tags: tags
+    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    appInsightsName: ai.outputs.applicationInsightsName
+  }
+}
+
+module configStoreDataOwnerAccess 'core/security/role.bicep' = {
+  scope: rg
+  name: 'config-store-data-owner-role'
+  params: {
+    principalId: principalId
+    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' // App Configuration Data Owner
+  }
+}
+
 output AZURE_RESOURCE_GROUP string = rg.name
 
 // Outputs required for local development server
@@ -401,6 +426,7 @@ output AZURE_AI_SEARCH_ENDPOINT string = searchServiceEndpoint
 output AZURE_AI_EMBED_DIMENSIONS string = embeddingDeploymentDimensions
 output AZURE_AI_AGENT_NAME string = agentName
 output AZURE_AI_AGENT_ID string = agentID
+output APP_CONFIGURATION_ENDPOINT string = configStore.outputs.endpoint
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName

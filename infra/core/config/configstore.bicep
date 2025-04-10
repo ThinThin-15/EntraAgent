@@ -18,13 +18,30 @@ param keyValueValues array = []
 @description('The principal ID to grant access to the Azure App Configuration store')
 param principalId string
 
-resource configStore 'Microsoft.AppConfiguration/configurationStores@2023-03-01' = {
+@description('The Application Insights ID linked to the Azure App Configuration store')
+param appInsightsName string
+
+// TODO: enable experimentation
+resource configStore 'Microsoft.AppConfiguration/configurationStores@2023-09-01-preview' = {
   name: name
   location: location
   sku: {
     name: 'standard'
   }
   tags: tags
+  properties: {
+    encryption: {}
+    disableLocalAuth: true
+    enablePurgeProtection: false
+    experimentation:{}
+    dataPlaneProxy:{
+      authenticationMode: 'Pass-through'
+      privateLinkDelegation: 'Disabled'
+    }
+    telemetry: {
+      resourceId: appInsights.id
+    }
+  }
 }
 
 resource configStoreKeyValue 'Microsoft.AppConfiguration/configurationStores/keyValues@2023-03-01' = [for (item, i) in keyValueNames: {
@@ -45,4 +62,9 @@ module configStoreAccess '../security/configstore-access.bicep' = {
   dependsOn: [configStore]
 }
 
+resource appInsights  'Microsoft.Insights/components@2020-02-02-preview'  existing = {
+  name: appInsightsName
+}
+
 output endpoint string = configStore.properties.endpoint
+output name string = configStore.name

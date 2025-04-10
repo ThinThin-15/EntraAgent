@@ -1,0 +1,40 @@
+{
+    "schemaVersion": "2.0.0",
+    "feature_management": {
+      "feature_flags": [
+        {
+          "id": "my-agent",
+          "enabled": true,
+          "variants": [
+            {
+              "name": "v1",
+              "configuration_value": "<agent-id-placeholder>"
+            },
+            {
+              "name": "v2",
+              "configuration_value": "<agent-id-placeholder>"
+            }
+          ],
+          "allocation": {
+            "percentile": [
+              {
+                "variant": "v1",
+                "from": 0,
+                "to": 50
+              },
+              {
+                "variant": "v2",
+                "from": 50,
+                "to": 100
+              }
+            ],
+            "default_when_enabled": "v1",
+            "default_when_disabled": "v1"
+          },
+          "telemetry": {
+            "enabled": true
+          }
+        }
+      ]
+    }    
+}
