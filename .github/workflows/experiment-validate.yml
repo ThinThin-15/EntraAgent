@@ -1,4 +1,4 @@
-name: Deploy Experiments
+name: Validate Experiments
 on:
     workflow_dispatch:
     push:
