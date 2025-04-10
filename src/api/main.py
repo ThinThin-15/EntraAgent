@@ -49,7 +49,7 @@ async def lifespan(app: fastapi.FastAPI):
                 from azure.monitor.opentelemetry import configure_azure_monitor
                 configure_azure_monitor(connection_string=application_insights_connection_string)
                 # Do not instrument the code yet, before trace fix is available.
-                #ai_client.telemetry.enable()
+                ai_client.telemetry.enable()
 
         if os.environ.get("AZURE_AI_AGENT_ID"):
             try: 
