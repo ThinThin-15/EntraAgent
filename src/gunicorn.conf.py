@@ -49,7 +49,8 @@ async def create_index_maybe(
     """
     from api.search_index_manager import SearchIndexManager
     endpoint = os.environ.get('AZURE_AI_SEARCH_ENDPOINT')
-    if endpoint:
+    embedding = os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME')
+    if endpoint and embedding:
         aoai_connection = await ai_client.connections.get_default(
             connection_type=ConnectionType.AZURE_OPEN_AI,
             include_credentials=True)
@@ -69,8 +70,8 @@ async def create_index_maybe(
             credential=creds,
             index_name=os.getenv('AZURE_AI_SEARCH_INDEX_NAME'),
             dimensions=None,
-            model=os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME'),
-            deployment_name=os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME'),
+            model=embedding,
+            deployment_name=embedding,
             embedding_endpoint=aoai_connection.endpoint_url,
             embed_api_key=aoai_connection.key
         )

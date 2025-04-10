@@ -25,7 +25,7 @@ The app code runs in Azure Container apps to process the user input and generate
 
 ### Quick Deploy
 
-| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Azure-Samples/get-started-with-ai-agents) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/Azure-Samples/get-started-with-ai-agents) | 
+| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Azure-Samples/get-started-with-ai-agents) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/Azure-Samples/get-started-with-ai-agents) |
 |---|---|
 
 Github Codespaces and Dev Containers both allow you to download and deploy the code for development. You can also continue with local development. Once you have selected your environment, follow the instructions below to customize and deploy your solution.    
@@ -50,6 +50,7 @@ Make sure the following tools are installed:
 2. [Python 3.9+](https://www.python.org/downloads/)
 3. [Git](https://git-scm.com/downloads)
 4. [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+5. \[Windows Only\] [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) of the latest version, needed only for local application development on Windows operation system. Please make sure that power shell executable `pwsh.exe` is added to the `PATH` variable.
 
 ## Configure your Environment
 
@@ -93,7 +94,7 @@ azd env set AZURE_AI_AGENT_MODEL_VERSION <MODEL_VERSION>
 
 #### How to configure Agent knowledge retrieval
 By default, the template deploys OpenAI's [file search](https://learn.microsoft.com/azure/ai-services/agents/how-to/tools/file-search?tabs=python&pivots=overview) for agent's knowledge retrieval. An agent also can perform search using the search index, deployed in Azure AI Search resource. The semantic index search represents so-called hybrid search i.e. it uses LLM to search for the relevant context in the provided index as well as embedding similarity search. This index is built from the `embeddings.csv` file, containing the embeddings vectors, followed by the contexts.
-To use index search, please set the local environment variable `USE_AZURE_AI_SEARCH_SERVICE` to `true` during the `azd up` command. In this case the Azure AI Search resource will be deployed and used.
+To use index search, please set the local environment variable `USE_AZURE_AI_SEARCH_SERVICE` to `true` during the `azd up` command. In this case the Azure AI Search resource will be deployed and used. For more information on Azure AI serach, please see the [Azure AI Search Setup Guide](docs/ai_search.md)
 
 #### Logging
 To enable logging to a file, navigate to `src/Dockerfile` and edit the code to uncomment the following line:
@@ -246,7 +247,7 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
     ```
     ⚠️ If you do not increase your quota, you may encounter rate limit issues. If needed, you can increase the quota after deployment by editing your model in the Models and Endpoints tab of the [Azure AI Foundry Portal](https://ai.azure.com/).
 
-3. Provision and deploy all the resources by running the following in get-started-with-ai-agents directory:
+3. Provision and deploy all the resources with public docker image `azdtemplate.azurecr.io/get-start-with-ai-agents:latest` by running the following in get-started-with-ai-agents directory:
 
     ```shell
     azd up
@@ -273,20 +274,10 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
     * In the [Azure Portal](https://portal.azure.com/), navigate to your environment's resource group. The name will be `rg-[your environment name]`. Here, you should see your container app, storage account, and all of the other [resources](#resources) that are created in the deployment.
     * In the [Azure AI Foundry Portal](https://ai.azure.com/), select your project. If you navigate to the Assistants tab, you should be able to view your new assistant, named `agent-template-assistant`. If you navigate to the Models and Endpoints tab, you should see your AI Services connection with your model deployments. 
 
-7. (Optional) If you make further modification to the app code, you can deploy the updated version with:
+7. (Optional) You can use a local development server to test app changes locally. To do so, follow the steps in [local deployment server](#local-development-server) after your app is deployed.
 
-    ```shell
-    azd deploy
-    ```
-    You can get more detailed output with the ```--debug``` parameter.
-    ```shell
-    azd deploy --debug
-    ```
-    >**Important:**
-    >
-    >Check carefully for any errors during deployment and the startup phase of the Azure Container App. If the container fails to start correctly after deployment, the application changes you made will not take effect, and Azure Container Apps will continue serving requests from the previous stable revision.
+8. (Optional) Follow this [tutorial](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task) to build your changes into a Docker image and deploy to Azure Container App.
 
-8. (Optional) You can use a local development server to test app changes locally. To do so, follow the steps in [local deployment server](#local-development-server) after your app is deployed.
 
 ## Resource Clean-up
 

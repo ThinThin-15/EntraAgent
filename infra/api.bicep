@@ -4,9 +4,6 @@ param tags object = {}
 
 param identityName string
 param containerAppsEnvironmentName string
-param containerRegistryName string
-param serviceName string = 'api'
-param exists bool
 param projectConnectionString string
 param agentDeploymentName string
 param searchConnectionName string
@@ -16,6 +13,7 @@ param embeddingDeploymentDimensions string
 param searchServiceEndpoint string
 param agentName string
 param agentID string
+param projectName string
 
 resource apiIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -69,24 +67,21 @@ var env = [
   }
 ]
 
-var module_name = replace(serviceName, ' ', '-')
 
 module app 'core/host/container-app-upsert.bicep' = {
-  name: '${module_name}-container-app-module'
+  name: 'container-app-module'
   params: {
     name: name
     location: location
-    tags: union(tags, { 'azd-service-name': serviceName })
+    tags: tags
     identityName: apiIdentity.name
-    exists: exists
     containerAppsEnvironmentName: containerAppsEnvironmentName
-    containerRegistryName: containerRegistryName
     targetPort: 50505
     env: env
+    projectName: projectName
   }
 }
 
 output SERVICE_API_IDENTITY_PRINCIPAL_ID string = apiIdentity.properties.principalId
 output SERVICE_API_NAME string = app.outputs.name
 output SERVICE_API_URI string = app.outputs.uri
-output SERVICE_API_IMAGE_NAME string = app.outputs.imageName

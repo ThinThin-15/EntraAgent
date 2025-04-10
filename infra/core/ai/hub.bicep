@@ -8,8 +8,6 @@ param storageAccountId string
 param keyVaultId string
 @description('The application insights ID to use for the AI Foundry Hub Resource')
 param applicationInsightsId string = ''
-@description('The container registry ID to use for the AI Foundry Hub Resource')
-param containerRegistryId string = ''
 @description('The AI Services account name to use for the AI Foundry Hub Resource')
 param aiServicesName string
 @description('The AI Services connection name to use for the AI Foundry Hub Resource')
@@ -49,7 +47,6 @@ resource hub 'Microsoft.MachineLearningServices/workspaces@2024-07-01-preview' =
     storageAccount: storageAccountId
     keyVault: keyVaultId
     applicationInsights: !empty(applicationInsightsId) ? applicationInsightsId : null
-    containerRegistry: !empty(containerRegistryId) ? containerRegistryId : null
     hbiWorkspace: false
     managedNetwork: {
       isolationMode: 'Disabled'

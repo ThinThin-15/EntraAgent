@@ -6,15 +6,6 @@ name: azd-get-started-with-ai-agents
 metadata:
   template: azd-get-started-with-ai-agents@0.0.1-beta
 
-services:
-  "api and frontend":
-    project: ./src
-    language: py
-    host: containerapp
-    docker:
-      image: api-and-frontend
-      remoteBuild: true
-
 hooks:
   postprovision:
     windows:

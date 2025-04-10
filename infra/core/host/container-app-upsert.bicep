@@ -23,12 +23,6 @@ param containerMinReplicas int = 1
 @description('The name of the container')
 param containerName string = 'main'
 
-@description('The name of the container registry')
-param containerRegistryName string = ''
-
-@description('Hostname suffix for container registry. Set when deploying to sovereign clouds')
-param containerRegistryHostSuffix string = 'azurecr.io'
-
 @allowed([ 'http', 'grpc' ])
 @description('The protocol used by Dapr to connect to the app, e.g., HTTP or gRPC')
 param daprAppProtocol string = 'http'
@@ -39,9 +33,6 @@ param daprEnabled bool = false
 @description('The Dapr app ID')
 param daprAppId string = containerName
 
-@description('Specifies if the resource already exists')
-param exists bool = false
-
 @description('Specifies if Ingress is enabled for the container app')
 param ingressEnabled bool = true
 
@@ -51,9 +42,6 @@ param identityType string = 'None'
 
 @description('The name of the user-assigned identity')
 param identityName string = ''
-
-@description('The name of the container image')
-param imageName string = ''
 
 @description('The secrets required for the container')
 @secure()
@@ -71,9 +59,8 @@ param serviceBinds array = []
 @description('The target port for the container')
 param targetPort int = 80
 
-resource existingApp 'Microsoft.App/containerApps@2023-05-02-preview' existing = if (exists) {
-  name: name
-}
+param projectName string
+
 
 module app 'container-app.bicep' = {
   name: '${deployment().name}-update'
@@ -86,8 +73,6 @@ module app 'container-app.bicep' = {
     ingressEnabled: ingressEnabled
     containerName: containerName
     containerAppsEnvironmentName: containerAppsEnvironmentName
-    containerRegistryName: containerRegistryName
-    containerRegistryHostSuffix: containerRegistryHostSuffix
     containerCpuCoreCount: containerCpuCoreCount
     containerMemory: containerMemory
     containerMinReplicas: containerMinReplicas
@@ -98,13 +83,12 @@ module app 'container-app.bicep' = {
     secrets: secrets
     external: external
     env: env
-    imageName: !empty(imageName) ? imageName : exists ? existingApp.properties.template.containers[0].image : ''
     targetPort: targetPort
     serviceBinds: serviceBinds
+    dependOn: projectName
   }
 }
 
 output defaultDomain string = app.outputs.defaultDomain
-output imageName string = app.outputs.imageName
 output name string = app.outputs.name
 output uri string = app.outputs.uri
