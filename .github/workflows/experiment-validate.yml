@@ -13,7 +13,7 @@ permissions:
     contents: read
 
 env:
-    APP_CONFIGURATION_FILE: .config/feature-flags*.json
+    APP_CONFIGURATION_FILE: .config/feature-flags.json
 
 jobs:         
     validate-feature-flags:
