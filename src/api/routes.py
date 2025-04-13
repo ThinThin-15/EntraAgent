@@ -231,8 +231,8 @@ async def chat(
     app_config = Depends(get_app_config),
 ):
     # Refresh config if configured 
-    #if app_config:
-        #app_config.refresh()
+    if app_config:
+        app_config.refresh()
     
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
@@ -251,9 +251,8 @@ async def chat(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    #agent_id = await get_agent_variant(feature_manager, ai_client) or agent.id    
-    agent_id = agent.id    
-
+    agent_id = await get_agent_variant(feature_manager, ai_client) or agent.id    
+    
     # Parse the JSON from the request.
     try:
         user_message = await request.json()

@@ -61,8 +61,7 @@ async def lifespan(app: fastapi.FastAPI):
                             endpoint=app_config_conn_str,
                             credential=DefaultAzureCredential(),
                             feature_flag_enabled=True,
-                            feature_flag_refresh_enabled=True, # Is it needed? 
-                            refresh_interval=60,  # wait at least 60s before next refresh
+                            feature_flag_refresh_enabled=True
                         )
                         feature_manager = FeatureManager(app_config, on_feature_evaluated=publish_telemetry)
                         app.state.app_config = app_config
