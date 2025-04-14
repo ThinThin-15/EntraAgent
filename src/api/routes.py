@@ -139,16 +139,16 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-async def get_agent_variant(feature_manager, ai_client: AIProjectClient) -> str:
+async def get_agent_variant(feature_manager, ai_client: AIProjectClient):
     if feature_manager:
         agent_variant = feature_manager.get_variant("my-agent")
         if agent_variant and agent_variant.configuration:
             try:
-                agent_variant = await ai_client.agents.get_agent(agent_variant.configuration)        
-                logger.info(f"Using agent variant: {agent_variant.id}")
-                return agent_variant.id
+                agent = await ai_client.agents.get_agent(agent_variant.configuration)        
+                logger.info(f"Using agent variant: {agent.id}")
+                return agent_variant
             except Exception as e:
-                logger.error(f"Error retrieving agent variant with Id {agent_variant.id}. {e}")
+                logger.error(f"Error retrieving agent variant with Id {agent_variant.configuration}. {e}")
     return None
 
 async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:
@@ -251,7 +251,8 @@ async def chat(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    agent_id = await get_agent_variant(feature_manager, ai_client) or agent.id    
+    agent_variant = await get_agent_variant(feature_manager, ai_client)
+    agent_id = agent_variant.configuration if agent_variant else agent.id
     
     # Parse the JSON from the request.
     try:
@@ -288,6 +289,8 @@ async def chat(
     # Update cookies to persist the thread and agent IDs.
     response.set_cookie("thread_id", thread_id)
     response.set_cookie("agent_id", agent_id)
+
+    response.headers["agent-variant"] = str(agent_variant.name) if agent_variant else None
     return response
 
 

@@ -175,7 +175,7 @@ class ChatUI {
         }
     }
 
-    createAssistantMessageDiv() {        
+    createAssistantMessageDiv(agentVariant) {        
         const assistantTemplateClone = this.assistantTemplate.content.cloneNode(true);
         if (!assistantTemplateClone) {
             console.error("Failed to clone assistant template.");
@@ -184,7 +184,7 @@ class ChatUI {
 
         // Remove the placeholder message
         this.removePlaceholder();
-    
+   
         // Append the clone to the target container
         this.targetContainer.appendChild(assistantTemplateClone);
     
@@ -203,6 +203,14 @@ class ChatUI {
     
         if (!messageDiv) {
             console.error("Message content div not found in the template.");
+        }
+
+        // Update message title if a variant is used
+        if (agentVariant) {
+            const messageTitleDiv = newlyAddedToast.querySelector(".message-title");
+            if (messageTitleDiv) {
+                messageTitleDiv.innerHTML += ` (Variant: ${agentVariant})`;
+            } 
         }
     
         return messageDiv;
