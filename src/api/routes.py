@@ -290,7 +290,10 @@ async def chat(
     response.set_cookie("thread_id", thread_id)
     response.set_cookie("agent_id", agent_id)
 
-    response.headers["agent-variant"] = str(agent_variant.name) if agent_variant else None
+    # Set the agent variant name in the response headers if available.
+    if agent_variant:
+        response.headers["agent-variant"] = str(agent_variant.name)
+
     return response
 
 

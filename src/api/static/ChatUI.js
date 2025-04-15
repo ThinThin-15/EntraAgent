@@ -195,7 +195,7 @@ class ChatUI {
 
         // Remove the placeholder message
         this.removePlaceholder();
-        
+
         // Append the clone to the target container
         this.targetContainer.appendChild(assistantTemplateClone);
     
