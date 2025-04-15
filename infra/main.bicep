@@ -112,12 +112,12 @@ param useSearchService bool = false
 param principalId string = ''
 
 @description('Random seed to be used during generation of new resources suffixes.')
-param seed string = ''//newGuid()
+param seed string = newGuid() // why do we need this?
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
-var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P'} // TODO: remove ExP tag
+var tags = { 'azd-env-name': environmentName }
 
 var agentID = !empty(aiAgentID) ? aiAgentID : ''
 

@@ -9,7 +9,6 @@ azure-monitor-opentelemetry
 azure-search-documents
 opentelemetry-sdk
 
-azure-ai-evaluation
 azure-appconfiguration-provider==2.1.0b1
 FeatureManagement==2.0.0b3
 azure-monitor-opentelemetry-exporter

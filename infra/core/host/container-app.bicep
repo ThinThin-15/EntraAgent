@@ -118,7 +118,7 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
       serviceBinds: !empty(serviceBinds) ? serviceBinds : null
       containers: [
         {
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: 'azdtemplate.azurecr.io/get-start-with-ai-agents:latest' // Got an error on this image during azd up
           name: containerName
           env: env
           resources: {
