@@ -139,9 +139,9 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-async def get_agent_variant(feature_manager, ai_client: AIProjectClient):
+async def get_agent_variant(feature_manager, ai_client: AIProjectClient, thread_id: str):
     if feature_manager:
-        agent_variant = feature_manager.get_variant("my-agent")
+        agent_variant = feature_manager.get_variant("my-agent", thread_id)
         if agent_variant and agent_variant.configuration:
             try:
                 agent = await ai_client.agents.get_agent(agent_variant.configuration)        
@@ -176,8 +176,7 @@ async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient)
 @router.get("/chat/history")
 async def history(
     request: Request,
-    ai_client : AIProjectClient = Depends(get_ai_client),
-    agent : Agent = Depends(get_agent),
+    ai_client : AIProjectClient = Depends(get_ai_client)
 ):
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
@@ -226,7 +225,7 @@ async def history(
 async def chat(
     request: Request,
     ai_client : AIProjectClient = Depends(get_ai_client),
-    agent : Agent = Depends(get_agent),
+    agent: Agent = Depends(get_agent),
     feature_manager = Depends(get_feature_manager),
     app_config = Depends(get_app_config),
 ):
@@ -251,7 +250,7 @@ async def chat(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    agent_variant = await get_agent_variant(feature_manager, ai_client)
+    agent_variant = await get_agent_variant(feature_manager, ai_client, thread_id)
     agent_id = agent_variant.configuration if agent_variant else agent.id
     
     # Parse the JSON from the request.
