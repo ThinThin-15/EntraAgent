@@ -16,17 +16,20 @@ param keyValueNames array = []
 param keyValueValues array = []
 
 @description('The principal ID to grant access to the Azure App Configuration store')
-param principalId string
+param appPrincipalId string
+
+@description('The principal ID to grant access to the Azure App Configuration store')
+param userPrincipalId string
+
 
 @description('The Application Insights ID linked to the Azure App Configuration store')
 param appInsightsName string
 
-// TODO: enable experimentation
 resource configStore 'Microsoft.AppConfiguration/configurationStores@2023-09-01-preview' = {
   name: name
   location: location
   sku: {
-    name: 'standard'
+    name: 'Standard'
   }
   tags: tags
   properties: {
@@ -57,7 +60,8 @@ module configStoreAccess '../security/configstore-access.bicep' = {
   name: 'app-configuration-access'
   params: {
     configStoreName: name
-    principalId: principalId
+    appPrincipalId: appPrincipalId
+    userPrincipalId: userPrincipalId
   }
   dependsOn: [configStore]
 }

@@ -141,14 +141,15 @@ async def index(request: Request):
 
 async def get_agent_variant(feature_manager, ai_client: AIProjectClient, thread_id: str):
     if feature_manager:
+        # Fetch the variant for the feature flag "my-agent" using thread_id as targeting Id
         agent_variant = feature_manager.get_variant("my-agent", thread_id)
         if agent_variant and agent_variant.configuration:
             try:
                 agent = await ai_client.agents.get_agent(agent_variant.configuration)        
-                logger.info(f"Using agent variant: {agent.id}")
+                logger.info(f"Using variant={agent_variant.name} with agent Id={agent.id} for thread_id={thread_id}")
                 return agent_variant
             except Exception as e:
-                logger.error(f"Error retrieving agent variant with Id {agent_variant.configuration}. {e}")
+                logger.error(f"Error retrieving agent variant with Id={agent_variant.configuration} from AI project. {e}")
     return None
 
 async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:

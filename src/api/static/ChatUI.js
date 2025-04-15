@@ -44,12 +44,12 @@ class ChatUI {
 
     addNewThreadClickListener() {
         const newThreadButton = document.getElementById('new-thread-button');
-        newThreadButton.addEventListener('click', async () => {           
+        newThreadButton.addEventListener('click', async () => {
+            // Clear the chat messages and the thread_id cookie         
             document.querySelectorAll('.toast-container').forEach(element => element.remove());
             document.cookie = "thread_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             console.log("thread_id cookie cleared to start new thread");
-        });
-    
+        });    
     }
 
     addCitationClickListener() {
@@ -195,7 +195,7 @@ class ChatUI {
 
         // Remove the placeholder message
         this.removePlaceholder();
-   
+        
         // Append the clone to the target container
         this.targetContainer.appendChild(assistantTemplateClone);
     

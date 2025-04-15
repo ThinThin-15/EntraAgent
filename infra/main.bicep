@@ -112,12 +112,12 @@ param useSearchService bool = false
 param principalId string = ''
 
 @description('Random seed to be used during generation of new resources suffixes.')
-param seed string = '' //newGuid() why Guid?
+param seed string = ''//newGuid()
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
-var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P' } // TODO: remove ExP tag
+var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P'} // TODO: remove ExP tag
 
 var agentID = !empty(aiAgentID) ? aiAgentID : ''
 
@@ -399,17 +399,9 @@ module configStore 'core/config/configstore.bicep' = {
     location: location
     name: '${abbrs.appConfigurationStores}${resourceToken}'
     tags: tags
-    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    appPrincipalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    userPrincipalId: principalId
     appInsightsName: ai.outputs.applicationInsightsName
-  }
-}
-
-module configStoreDataOwnerAccess 'core/security/role.bicep' = {
-  scope: rg
-  name: 'config-store-data-owner-role'
-  params: {
-    principalId: principalId
-    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' // App Configuration Data Owner
   }
 }
 

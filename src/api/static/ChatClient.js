@@ -68,7 +68,7 @@ class ChatClient {
         let accumulatedContent = '';
         let isStreaming = true;
         let buffer = '';
-        let annotations = [];        
+        let annotations = [];
 
         // Create a reader for the SSE stream
         const reader = stream.getReader();
@@ -121,7 +121,7 @@ class ChatClient {
                                 data.error.message || "An error occurred.",
                                 false
                             );           
-                            return;                     
+                            return;       
                         }
 
                         // Check the data type to decide how to update the UI
