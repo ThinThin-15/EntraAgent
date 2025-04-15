@@ -29,7 +29,7 @@ resource configStore 'Microsoft.AppConfiguration/configurationStores@2023-09-01-
   name: name
   location: location
   sku: {
-    name: 'Standard'
+    name: 'free'
   }
   tags: tags
   properties: {
