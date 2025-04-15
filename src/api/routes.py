@@ -185,7 +185,7 @@ async def history(
 
     # Attempt to get an existing thread. If not found, create a new one.
     try:
-        if thread_id and agent_id == agent.id:
+        if thread_id:
             logger.info(f"Retrieving thread with ID {thread_id}")
             thread = await ai_client.agents.get_thread(thread_id)
         else:
@@ -240,7 +240,7 @@ async def chat(
 
     # Attempt to get an existing thread. If not found, create a new one.
     try:
-        if thread_id and agent_id == agent.id:
+        if thread_id:
             logger.info(f"Retrieving thread with ID {thread_id}")
             thread = await ai_client.agents.get_thread(thread_id)
         else:

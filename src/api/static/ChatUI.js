@@ -11,6 +11,7 @@ class ChatUI {
         }
         this.addCitationClickListener();
         this.attachCloseButtonListener();
+        this.addNewThreadClickListener();
     }
 
     preprocessContent(content, annotations) {
@@ -40,6 +41,16 @@ class ChatUI {
             placeholderWrapper.remove();
         }            
     }    
+
+    addNewThreadClickListener() {
+        const newThreadButton = document.getElementById('new-thread-button');
+        newThreadButton.addEventListener('click', async () => {           
+            document.querySelectorAll('.toast-container').forEach(element => element.remove());
+            document.cookie = "thread_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            console.log("thread_id cookie cleared to start new thread");
+        });
+    
+    }
 
     addCitationClickListener() {
         document.addEventListener('click', (event) => {
