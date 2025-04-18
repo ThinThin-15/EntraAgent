@@ -78,6 +78,7 @@ jobs:
 
   deploy-experiments:
         name: Deploy Experiments
+        needs: build
         runs-on: ubuntu-latest
         env:
           APP_CONFIGURATION_FILE: .config/feature-flags.json 
