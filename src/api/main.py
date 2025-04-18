@@ -54,10 +54,10 @@ async def lifespan(app: fastapi.FastAPI):
                 app_config_endpoint = os.getenv("APP_CONFIGURATION_ENDPOINT")
                 if app_config_endpoint:
                     try: 
-                        from azure.appconfiguration.provider import load
-                        from featuremanagement import FeatureManager
+                        from azure.appconfiguration.provider.aio import load
+                        from featuremanagement.aio import FeatureManager
                         from featuremanagement.azuremonitor import publish_telemetry                    
-                        app_config = load(
+                        app_config = await load(
                             endpoint=app_config_endpoint,
                             credential=DefaultAzureCredential(),
                             feature_flag_enabled=True,

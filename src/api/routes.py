@@ -27,7 +27,7 @@ from azure.ai.projects.models import (
     RunStep
 )
 
-from azure.appconfiguration.provider import AzureAppConfigurationProvider
+from azure.appconfiguration.provider.aio import AzureAppConfigurationProvider
 from featuremanagement.aio import FeatureManager
 
 # Create a logger for this module
@@ -144,7 +144,7 @@ async def index(request: Request):
 async def get_agent_variant(feature_manager, ai_client: AIProjectClient, thread_id: str):
     if feature_manager:
         # Fetch the variant for the feature flag "my-agent" using thread_id as targeting Id
-        agent_variant = feature_manager.get_variant("my-agent", thread_id)
+        agent_variant = await feature_manager.get_variant("my-agent", thread_id)
         if agent_variant and agent_variant.configuration:
             try:
                 await ai_client.agents.get_agent(agent_variant.configuration)        
@@ -234,7 +234,7 @@ async def chat(
 ):
     # Refresh config if configured 
     if app_config:
-        app_config.refresh()
+        await app_config.refresh()
     
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
