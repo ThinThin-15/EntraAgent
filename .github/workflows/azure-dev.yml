@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   build:
+    name: Deploy Infrastructure and Application
     runs-on: ubuntu-latest
     if: ${{ vars.AZURE_CLIENT_ID != '' }}
     env:
