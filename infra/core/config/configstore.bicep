@@ -6,6 +6,9 @@ param name string
 @description('The Azure region/location for the Azure App Configuration store')
 param location string = resourceGroup().location
 
+@description('The SKU for the Azure App Configuration store')
+param sku string
+
 @description('Custom tags to apply to the Azure App Configuration store')
 param tags object = {}
 
@@ -21,7 +24,6 @@ param appPrincipalId string
 @description('The principal ID to grant access to the Azure App Configuration store')
 param userPrincipalId string
 
-
 @description('The Application Insights ID linked to the Azure App Configuration store')
 param appInsightsName string
 
@@ -29,7 +31,7 @@ resource configStore 'Microsoft.AppConfiguration/configurationStores@2023-09-01-
   name: name
   location: location
   sku: {
-    name: 'free'
+    name: sku
   }
   tags: tags
   properties: {

@@ -4,6 +4,8 @@ param tags object = {}
 
 param identityName string
 param containerAppsEnvironmentName string
+param containerRegistryName string
+param serviceName string = 'api'
 param projectConnectionString string
 param agentDeploymentName string
 param searchConnectionName string
@@ -73,9 +75,10 @@ module app 'core/host/container-app-upsert.bicep' = {
   params: {
     name: name
     location: location
-    tags: tags
+    tags: union(tags, { 'azd-service-name': serviceName })
     identityName: apiIdentity.name
     containerAppsEnvironmentName: containerAppsEnvironmentName
+    containerRegistryName: containerRegistryName
     targetPort: 50505
     env: env
     projectName: projectName
