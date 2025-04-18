@@ -104,7 +104,15 @@ param embedDeploymentSku string = 'Standard'
 // https://learn.microsoft.com/azure/ai-services/openai/quotas-limits
 param embedDeploymentCapacity int = 30
 
+@description('Do we want to use Azure Application Insights')
 param useApplicationInsights bool = true
+
+@description('Do we want to use Azure App Configuration')
+param useAppConfiguration bool = true
+
+@description('Do we want to use Azure App Configuration')
+param appConfigurationSku string = 'free' 
+
 @description('Do we want to use the Azure AI Search')
 param useSearchService bool = false
 
@@ -260,6 +268,19 @@ module containerApps 'core/host/container-apps.bicep' = {
   }
 }
 
+// App Configuration
+module configStore 'core/config/configstore.bicep' = if (useApplicationInsights && useAppConfiguration) {
+  name: 'config-store'
+  scope: rg
+  params: {
+    location: location
+    sku: appConfigurationSku
+    name: '${abbrs.appConfigurationStores}${resourceToken}'
+    tags: tags
+    appInsightsName: ai.outputs.applicationInsightsName
+  }
+}
+
 // API app
 module api 'api.bicep' = {
   name: 'api'
@@ -280,6 +301,7 @@ module api 'api.bicep' = {
     agentName: agentName
     agentID: agentID
     projectName: projectName
+    appConfigurationEndpoint: configStore.outputs.endpoint
   }
 }
 
@@ -391,17 +413,21 @@ module backendRoleAzureAIDeveloperRG 'core/security/role.bicep' = {
   }
 }
 
-// App Configuration
-module configStore 'core/config/configstore.bicep' = {
-  name: 'config-store'
+module userRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'user-role-config-store-data-owner'
   scope: rg
   params: {
-    location: location
-    name: '${abbrs.appConfigurationStores}${resourceToken}'
-    tags: tags
-    appPrincipalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
-    userPrincipalId: principalId
-    appInsightsName: ai.outputs.applicationInsightsName
+    principalId: principalId
+    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' 
+  }
+}
+
+module backendRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'backend-role-config-store-data-reader'
+  scope: rg
+  params: {
+    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '516239f1-63e1-4d78-a4de-a74fb236a071' 
   }
 }
 

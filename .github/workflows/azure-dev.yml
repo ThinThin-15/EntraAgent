@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   build:
+    name: Deploy
     runs-on: ubuntu-latest
     if: ${{ vars.AZURE_CLIENT_ID != '' }}
     env:
@@ -76,8 +77,9 @@ jobs:
       - name: Deploy Application
         run: azd deploy --no-prompt
 
-  deploy-experiments:
-        name: Deploy Experiments
+  update-experiments:
+        name: Update Experiments
+        needs: build
         runs-on: ubuntu-latest
         env:
           APP_CONFIGURATION_FILE: .config/feature-flags.json 

@@ -51,17 +51,18 @@ async def lifespan(app: fastapi.FastAPI):
                 ai_client.telemetry.enable()
                 logger.info("Configured Application Insights for tracing.")
 
-                app_config_conn_str = os.getenv("APP_CONFIGURATION_ENDPOINT")
-                if app_config_conn_str:
+                app_config_endpoint = os.getenv("APP_CONFIGURATION_ENDPOINT")
+                if app_config_endpoint:
                     try: 
                         from azure.appconfiguration.provider import load
                         from featuremanagement import FeatureManager
                         from featuremanagement.azuremonitor import publish_telemetry                    
                         app_config = load(
-                            endpoint=app_config_conn_str,
+                            endpoint=app_config_endpoint,
                             credential=DefaultAzureCredential(),
                             feature_flag_enabled=True,
-                            feature_flag_refresh_enabled=True
+                            feature_flag_refresh_enabled=True,
+                            refresh_interval=300 # no refresh within 5 mins to avoid throttling
                         )
                         feature_manager = FeatureManager(app_config, on_feature_evaluated=publish_telemetry)
                         app.state.app_config = app_config
