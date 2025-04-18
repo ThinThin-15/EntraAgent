@@ -27,6 +27,9 @@ from azure.ai.projects.models import (
     RunStep
 )
 
+from azure.appconfiguration.provider import AzureAppConfigurationProvider
+from featuremanagement.aio import FeatureManager
+
 # Create a logger for this module
 logger = logging.getLogger("azureaiapp")
 
@@ -40,17 +43,16 @@ templates = Jinja2Templates(directory=directory)
 # Create a new FastAPI router
 router = fastapi.APIRouter()
 
-
 def get_ai_client(request: Request) -> AIProjectClient:
     return request.app.state.ai_client
 
 def get_agent(request: Request) -> Agent:
     return request.app.state.agent
 
-def get_feature_manager(request: Request):
+def get_feature_manager(request: Request) -> FeatureManager:
     return getattr(request.app.state, "feature_manager", None)
 
-def get_app_config(request: Request):
+def get_app_config(request: Request) -> AzureAppConfigurationProvider:
     return getattr(request.app.state, "app_config", None)
 
 def serialize_sse_event(data: Dict) -> str:
@@ -145,8 +147,8 @@ async def get_agent_variant(feature_manager, ai_client: AIProjectClient, thread_
         agent_variant = feature_manager.get_variant("my-agent", thread_id)
         if agent_variant and agent_variant.configuration:
             try:
-                agent = await ai_client.agents.get_agent(agent_variant.configuration)        
-                logger.info(f"Using variant={agent_variant.name} with agent Id={agent.id} for thread_id={thread_id}")
+                await ai_client.agents.get_agent(agent_variant.configuration)        
+                logger.info(f"Using variant={agent_variant.name} with agent Id={agent_variant.configuration} for thread_id={thread_id}")
                 return agent_variant
             except Exception as e:
                 logger.error(f"Error retrieving agent variant with Id={agent_variant.configuration} from AI project. {e}")
@@ -227,8 +229,8 @@ async def chat(
     request: Request,
     ai_client : AIProjectClient = Depends(get_ai_client),
     agent: Agent = Depends(get_agent),
-    feature_manager = Depends(get_feature_manager),
-    app_config = Depends(get_app_config),
+    feature_manager: FeatureManager = Depends(get_feature_manager),
+    app_config: AzureAppConfigurationProvider = Depends(get_app_config),
 ):
     # Refresh config if configured 
     if app_config:
