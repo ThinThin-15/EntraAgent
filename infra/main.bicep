@@ -104,14 +104,16 @@ param embedDeploymentSku string = 'Standard'
 // https://learn.microsoft.com/azure/ai-services/openai/quotas-limits
 param embedDeploymentCapacity int = 30
 
-@description('Do we want to use Azure Application Insights')
+@description('Whether to use Azure Application Insights')
 param useApplicationInsights bool = true
 
-@description('Do we want to use Azure App Configuration')
+@description('Whether to use Azure App Configuration')
 param useAppConfiguration bool = true
 
-@description('Do we want to use Azure App Configuration')
-param appConfigurationSku string = 'free' 
+@description('Sku for the App Configuration')
+ // Recommend to upgrade for production use. See pricing plan:
+ // https://azure.microsoft.com/en-us/pricing/details/app-configuration/
+ param appConfigurationSku string = 'free' 
 
 @description('Do we want to use the Azure AI Search')
 param useSearchService bool = false
