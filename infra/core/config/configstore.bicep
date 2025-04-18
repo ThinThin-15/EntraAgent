@@ -18,12 +18,6 @@ param keyValueNames array = []
 @description('Specifies the values of the key-value resources.')
 param keyValueValues array = []
 
-@description('The principal ID to grant access to the Azure App Configuration store')
-param appPrincipalId string
-
-@description('The principal ID to grant access to the Azure App Configuration store')
-param userPrincipalId string
-
 @description('The Application Insights ID linked to the Azure App Configuration store')
 param appInsightsName string
 
@@ -57,16 +51,6 @@ resource configStoreKeyValue 'Microsoft.AppConfiguration/configurationStores/key
     tags: tags
   }
 }]
-
-module configStoreAccess '../security/configstore-access.bicep' = {
-  name: 'app-configuration-access'
-  params: {
-    configStoreName: name
-    appPrincipalId: appPrincipalId
-    userPrincipalId: userPrincipalId
-  }
-  dependsOn: [configStore]
-}
 
 resource appInsights  'Microsoft.Insights/components@2020-02-02-preview'  existing = {
   name: appInsightsName

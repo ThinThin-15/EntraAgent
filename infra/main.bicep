@@ -275,6 +275,19 @@ module containerApps 'core/host/container-apps.bicep' = {
   }
 }
 
+// App Configuration
+module configStore 'core/config/configstore.bicep' = if (useApplicationInsights && useAppConfiguration) {
+  name: 'config-store'
+  scope: rg
+  params: {
+    location: location
+    sku: appConfigurationSku
+    name: '${abbrs.appConfigurationStores}${resourceToken}'
+    tags: tags
+    appInsightsName: ai.outputs.applicationInsightsName
+  }
+}
+
 // API app
 module api 'api.bicep' = {
   name: 'api'
@@ -296,6 +309,25 @@ module api 'api.bicep' = {
     agentName: agentName
     agentID: agentID
     projectName: projectName
+    appConfigurationEndpoint: configStore.outputs.endpoint
+  }
+}
+
+module userRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'user-role-config-store-data-owner'
+  scope: rg
+  params: {
+    principalId: principalId
+    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' 
+  }
+}
+
+module backendRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'backend-role-config-store-data-reader'
+  scope: rg
+  params: {
+    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '516239f1-63e1-4d78-a4de-a74fb236a071' 
   }
 }
 
@@ -407,20 +439,7 @@ module backendRoleAzureAIDeveloperRG 'core/security/role.bicep' = {
   }
 }
 
-// App Configuration
-module configStore 'core/config/configstore.bicep' = if (useApplicationInsights && useAppConfiguration) {
-  name: 'config-store'
-  scope: rg
-  params: {
-    location: location
-    sku: appConfigurationSku
-    name: '${abbrs.appConfigurationStores}${resourceToken}'
-    tags: tags
-    appPrincipalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
-    userPrincipalId: principalId
-    appInsightsName: ai.outputs.applicationInsightsName
-  }
-}
+
 
 output AZURE_RESOURCE_GROUP string = rg.name
 
