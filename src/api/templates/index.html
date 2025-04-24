@@ -42,12 +42,8 @@
 <body>
     <div class="container-fluid h-100 d-flex flex-row">
         <div class="row flex-grow-1 h-100">
-            {% if use_react_app %}
-            <!-- React App -->
-            <div id="react-root" class="col-full d-flex flex-column h-100"></div>
-            {% else %}
-            <!-- Legacy Chat Section -->
-            <div class="col-full d-flex flex-column h-100" id="chat-container">
+            <!-- Chat Section -->
+            <div class="col-full d-flex flex-column h-100" id="chat-container"> <!-- Full width initially -->
                 <div id="messages" class="px-4 pb-4 pt-2 flex-grow-1 overflow-y-auto align-items-stretch">
                     <div id="placeholder-wrapper">
                         <div id="placeholder-message" class="text-center text-muted my-3">
@@ -72,10 +68,9 @@
                     </form>
                 </div>
             </div>
-            {% endif %}
 
             <!-- Document Viewer Section -->
-            <div class="col-6 d-flex flex-column h-100 p-3 bg-light border-left" id="document-viewer-section" style="display: none !important;">
+            <div class="col-6 d-flex flex-column h-100 p-3 bg-light border-left" id="document-viewer-section" style="display: none !important;"> <!-- Hidden and no space initially -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="mb-0">Document Viewer</h5>
                     <button id="close-button" class="btn bi-x"></button>
@@ -85,8 +80,6 @@
         </div>
     </div>
 
-    {% if not use_react_app %}
-    <!-- Legacy templates - only included for legacy mode -->
     <template id="message-template-user">
         <div class="toast-container position-static w-100 d-flex flex-column align-items-stretch user">
             <div class="toast fade show w-75 rounded-3 align-self-end">
@@ -103,16 +96,9 @@
             </div>
         </div>
     </template>
-    {% endif %}
     
-    {% if use_react_app %}
-    <!-- Load React app with fixed filename -->
-    <script type="module" src="/static/react/assets/main-react-app.js"></script>
-    {% else %}
-    <!-- Load legacy scripts only if use_react_app is false -->
     <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
     <script type="module" src="/static/main.js"></script>
-    {% endif %}
 </body>
 </html>
