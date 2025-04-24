@@ -157,12 +157,13 @@ async def index(request: Request):
     # Check if the useReactApp query parameter is present and set to 'true'
     use_react_app = request.query_params.get('useReactApp', '').lower() == 'true'
     
-    # No need to generate bundle_path anymore since we use a fixed filename
+    # Use different template files based on whether React is enabled
+    template_name = "index_react.html" if use_react_app else "index.html"
+    
     return templates.TemplateResponse(
-        "index.html", 
+        template_name, 
         {
             "request": request,
-            "use_react_app": use_react_app
         }
     )
 
