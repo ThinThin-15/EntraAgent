@@ -121,6 +121,10 @@ def create_app():
     directory = os.path.join(os.path.dirname(__file__), "static")
     app = fastapi.FastAPI(lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=directory), name="static")
+    
+    # Mount React static files
+    react_directory = os.path.join(os.path.dirname(__file__), "static/react")
+    app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
 
     from . import routes  # Import routes
     app.include_router(routes.router)
