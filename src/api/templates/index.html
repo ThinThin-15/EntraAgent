@@ -56,11 +56,11 @@
                 <div id="chat-area" class="text-light px-4 py-2 rounded-top text-dark d-flex flex-column justify-content-center background-user">
                     <form id="chat-form" onsubmit="event.preventDefault();">
                         <div class="input-group">
-                            <button class="btn btn-outline-dark" onclick="chatUI.clearChat()" aria-label="Start a new chat">
+                            <button type="button" class="btn btn-outline-dark" onclick="chatUI.clearChat()" aria-label="Start a new chat">
                                 <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
-                            </button>                            
+                            </button>
                             <i class="bi bi-body-text input-group-text dark-border" aria-hidden="true"></i>
-                            <input id="message" name="message" class="form-control form-control-sm dark-border" type="text" placeholder="Your Message" aria-label="Ask ChatGPT"></input>
+                            <input id="message" name="message" class="form-control form-control-sm dark-border" type="text" placeholder="Your Message" aria-label="Ask ChatGPT" />
                             <button type="submit" class="btn btn-outline-dark" style="border-left-width: 0" aria-label="Submit">
                                 Send <i class="bi bi-send-fill" aria-hidden="true"></i>
                             </button>
