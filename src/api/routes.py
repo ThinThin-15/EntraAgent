@@ -49,28 +49,6 @@ def get_agent(request: Request) -> Agent:
     return request.app.state.agent
 
 
-def get_react_bundle_path() -> str:
-    """Get the path to the latest React bundle from the Vite manifest file."""
-    manifest_path = os.path.join(os.path.dirname(__file__), "static", "react", ".vite", "manifest.json")
-    try:
-        with open(manifest_path, 'r') as f:
-            manifest = json.load(f)
-            # Get the main entry point bundle
-            if "src/main.jsx" in manifest:
-                return f"/static/react/{manifest['src/main.jsx']['file']}"
-            # Fallback to any entry point if the expected one isn't found
-            for key, value in manifest.items():
-                if value.get("isEntry", False):
-                    return f"/static/react/{value['file']}"
-            # If no entries are found, return a default path
-            logger.warning("No entries found in Vite manifest, using fallback path")
-            return "/static/react/assets/main.js"
-    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-        logger.error(f"Error reading Vite manifest: {e}")
-        # Return a default path if the manifest can't be read
-        return "/static/react/assets/main.js"
-
-
 def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
@@ -154,18 +132,7 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    # Check if the useReactApp query parameter is present and set to 'true'
-    use_react_app = request.query_params.get('useReactApp', '').lower() == 'true'
-    
-    # Use different template files based on whether React is enabled
-    template_name = "index_react.html" if use_react_app else "index.html"
-    
-    return templates.TemplateResponse(
-        template_name, 
-        {
-            "request": request,
-        }
-    )
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:

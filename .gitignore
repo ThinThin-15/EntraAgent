@@ -9,11 +9,3 @@ ENV/
 env.bak/
 venv.bak/
 .azure
-
-# Node.js dependencies
-node_modules/
-.pnpm-store/
-.pnpm-debug.log
-
-# React build output
-src/api/static/react/
