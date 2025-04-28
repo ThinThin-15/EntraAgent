@@ -31,13 +31,24 @@ load_dotenv()
 
 logger = configure_logging(os.getenv("APP_LOG_FILE", ""))
 
-FILES_NAMES = ["product_info_1.md", "product_info_2.md"]
 
 agentID = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get(
     "AZURE_EXISTING_AGENT_ID") else os.environ.get(
         "AZURE_AI_AGENT_ID")
     
 connection_string = os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") if os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") else os.environ.get("AZURE_AIPROJECT_CONNECTION_STRING")
+
+def list_files_in_files_directory() -> List[str]:    
+    # Get the absolute path of the 'files' directory
+    files_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), 'files'))
+    
+    # List all files in the 'files' directory
+    files = [f for f in os.listdir(files_directory) if os.path.isfile(os.path.join(files_directory, f))]
+    
+    return files
+
+FILES_NAMES = list_files_in_files_directory()
+
 
 async def create_index_maybe(
         ai_client: AIProjectClient, creds: AsyncTokenCredential) -> None:
