@@ -27,6 +27,9 @@ from azure.ai.projects.models import (
     RunStep
 )
 
+from azure.appconfiguration.provider import AzureAppConfigurationProvider
+from featuremanagement.aio import FeatureManager
+
 # Create a logger for this module
 logger = logging.getLogger("azureaiapp")
 
@@ -40,14 +43,17 @@ templates = Jinja2Templates(directory=directory)
 # Create a new FastAPI router
 router = fastapi.APIRouter()
 
-
 def get_ai_client(request: Request) -> AIProjectClient:
     return request.app.state.ai_client
-
 
 def get_agent(request: Request) -> Agent:
     return request.app.state.agent
 
+def get_feature_manager(request: Request) -> FeatureManager:
+    return getattr(request.app.state, "feature_manager", None)
+
+def get_app_config(request: Request) -> AzureAppConfigurationProvider:
+    return getattr(request.app.state, "app_config", None)
 
 def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
@@ -135,6 +141,32 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+async def get_agent_with_feature_flag(
+        feature_manager: FeatureManager,
+        ai_client: AIProjectClient,
+        thread_id: str,
+        default_agent: Agent = Depends(get_agent),
+    ) -> Optional[Agent]:
+    if thread_id and feature_manager:
+        # Fetch the variant for the feature flag "my-agent" using thread_id as targeting context
+        try:
+            agent_variant = await feature_manager.get_variant("my-agent", thread_id)
+        except Exception as e:
+            logger.error(f"Error fetching feature flag for thread_id={thread_id}: {e}")
+            agent_variant = None
+
+        # Retrieve the agent variant if available
+        if agent_variant and agent_variant.configuration:
+            try:
+                assigned_agent = await ai_client.agents.get_agent(agent_variant.configuration)        
+                logger.info(f"Using variant={agent_variant.name} with agent Id={agent_variant.configuration} for thread_id={thread_id}")
+                return assigned_agent
+            except Exception as e:
+                logger.error(f"Error retrieving agent variant with Id={agent_variant.configuration} from AI project. Fallback to default agent: {e}")
+
+    # No agent variant found, fallback to default agent
+    return default_agent
+
 async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:
     logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
     try:
@@ -160,14 +192,23 @@ async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient)
 @router.get("/chat/history")
 async def history(
     request: Request,
+    default_agent: Agent = Depends(get_agent),
     ai_client : AIProjectClient = Depends(get_ai_client),
-    agent : Agent = Depends(get_agent),
+    feature_manager: FeatureManager = Depends(get_feature_manager),
+    app_config: AzureAppConfigurationProvider = Depends(get_app_config),
 ):
+    # Refresh config if configured 
+    if app_config:
+        await app_config.refresh()
+
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
     agent_id = request.cookies.get('agent_id')
 
-    # Attempt to get an existing thread. If not found, create a new one.
+    # Attempt to get agent from feature flag and fallback to default agent if not found.
+    agent  = await get_agent_with_feature_flag(feature_manager, ai_client, thread_id, default_agent)
+    
+    # Attempt to get an existing thread. If not found or agent has changed, create a new one.
     try:
         if thread_id and agent_id == agent.id:
             logger.info(f"Retrieving thread with ID {thread_id}")
@@ -180,7 +221,6 @@ async def history(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    agent_id = agent.id
 
     # Create a new message from the user's input.
     try:
@@ -210,11 +250,20 @@ async def history(
 async def chat(
     request: Request,
     ai_client : AIProjectClient = Depends(get_ai_client),
-    agent : Agent = Depends(get_agent),
+    default_agent: Agent = Depends(get_agent),
+    feature_manager: FeatureManager = Depends(get_feature_manager),
+    app_config: AzureAppConfigurationProvider = Depends(get_app_config),
 ):
+    # Refresh config if configured 
+    if app_config:
+        await app_config.refresh()
+    
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
     agent_id = request.cookies.get('agent_id')
+
+    # Attempt to get agent from feature flag and fallback to default agent if not found.
+    agent  = await get_agent_with_feature_flag(feature_manager, ai_client, thread_id, default_agent)
 
     # Attempt to get an existing thread. If not found, create a new one.
     try:
@@ -230,7 +279,7 @@ async def chat(
 
     thread_id = thread.id
     agent_id = agent.id
-
+    
     # Parse the JSON from the request.
     try:
         user_message = await request.json()
@@ -266,6 +315,7 @@ async def chat(
     # Update cookies to persist the thread and agent IDs.
     response.set_cookie("thread_id", thread_id)
     response.set_cookie("agent_id", agent_id)
+
     return response
 
 

@@ -119,7 +119,7 @@ class ChatClient {
                                 data.error.message || "An error occurred.",
                                 false
                             );           
-                            return;                 
+                            return;       
                         }
 
                         // Check the data type to decide how to update the UI
