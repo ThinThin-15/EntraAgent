@@ -56,6 +56,12 @@
                 <div id="chat-area" class="text-light px-4 py-2 rounded-top text-dark d-flex flex-column justify-content-center background-user">
                     <form id="chat-form" onsubmit="event.preventDefault();">
                         <div class="input-group">
+                            <button type="button" class="btn btn-outline-dark" onclick="chatUI.clearChat()" aria-label="Start a new chat">
+                                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                            </button>
+                            <i class="bi bi-body-text input-group-text dark-border" aria-hidden="true"></i>
+                            <input id="message" name="message" class="form-control form-control-sm dark-border" type="text" placeholder="Your Message" aria-label="Ask ChatGPT" />
+                            <button type="submit" class="btn btn-outline-dark" style="border-left-width: 0" aria-label="Submit">
                             <button class="btn btn-secondary new-thread" id="new-thread-button" title="Start New Thread">
                                 <i class="bi bi-pencil-square" aria-hidden="true"></i>
                             </button>
@@ -73,7 +79,7 @@
             <div class="col-6 d-flex flex-column h-100 p-3 bg-light border-left" id="document-viewer-section" style="display: none !important;"> <!-- Hidden and no space initially -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="mb-0">Document Viewer</h5>
-                    <button id="close-button" class="btn btn-danger">Close</button>
+                    <button id="close-button" class="btn bi-x"></button>
                 </div>
                 <iframe id="document-viewer" class="flex-grow-1 border-0 rounded" style="background-color: white;"></iframe>
             </div>
@@ -81,12 +87,8 @@
     </div>
 
     <template id="message-template-user">
-        <div class="toast-container position-static w-100 d-flex flex-column align-items-stretch">
+        <div class="toast-container position-static w-100 d-flex flex-column align-items-stretch user">
             <div class="toast fade show w-75 rounded-3 align-self-end">
-                <div class="toast-header text-light background-user">
-                    <i class="bi bi-person me-1" aria-hidden="true"></i>
-                    <strong class="me-auto text-capitalize">You</strong>
-                </div>
                 <div class="toast-body message-content"></div>
             </div>
         </div>
@@ -100,7 +102,6 @@
                     <strong class="me-auto text-capitalize">Assistant</strong>
                 </div>
                 <div class="toast-body message-content">
-                    <div class="message-text"></div>
                 </div>
             </div>
         </div>

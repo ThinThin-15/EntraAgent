@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "5625042254313524971"
+      "templateHash": "18114037235110680016"
     }
   },
   "parameters": {
@@ -23,17 +23,19 @@
         "eastus",
         "eastus2",
         "swedencentral",
-        "switzerlandnorth",
         "westus",
         "westus3"
       ],
       "metadata": {
         "azd": {
-          "type": "location"
+          "type": "location",
+          "usageName": [
+            "OpenAI.GlobalStandard.gpt-4o-mini,30",
+            "OpenAI.GlobalStandard.text-embedding-3-small,30"
+          ]
         },
         "description": "Location for all resources"
-      },
-      "minLength": 1
+      }
     },
     "aiExistingProjectConnectionString": {
       "type": "string",
@@ -148,7 +150,14 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "ID of agent to deploy"
+        "description": "(Deprecated) ID of agent to deploy"
+      }
+    },
+    "azureExistingAgentId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "ID of the existing agent"
       }
     },
     "agentModelName": {
@@ -401,7 +410,8 @@
     "tags": {
       "azd-env-name": "[parameters('environmentName')]"
     },
-    "agentID": "[if(not(empty(parameters('aiAgentID'))), parameters('aiAgentID'), '')]",
+    "tempAgentID": "[if(not(empty(parameters('aiAgentID'))), parameters('aiAgentID'), '')]",
+    "agentID": "[if(not(empty(parameters('azureExistingAgentId'))), parameters('azureExistingAgentId'), variables('tempAgentID'))]",
     "aiChatModel": [
       {
         "name": "[parameters('agentDeploymentName')]",
@@ -488,7 +498,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "13049296426528843835"
+              "templateHash": "691137933995863928"
             }
           },
           "parameters": {
@@ -628,7 +638,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.34.44.8038",
-                      "templateHash": "6691800427529095215"
+                      "templateHash": "618022947787971888"
                     }
                   },
                   "parameters": {
@@ -2717,7 +2727,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.34.44.8038",
-                              "templateHash": "4408217411559527029"
+                              "templateHash": "15702788402850698618"
                             },
                             "description": "Creates an Azure AI Search instance."
                           },
@@ -2810,6 +2820,7 @@
                               "tags": "[parameters('tags')]",
                               "identity": "[variables('searchIdentityProvider')]",
                               "properties": {
+                                "authOptions": "[parameters('authOptions')]",
                                 "disableLocalAuth": "[parameters('disableLocalAuth')]",
                                 "disabledDataExfiltrationOptions": "[parameters('disabledDataExfiltrationOptions')]",
                                 "encryptionWithCmk": "[parameters('encryptionWithCmk')]",
@@ -4040,7 +4051,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "15704795189831026439"
+              "templateHash": "8075064967424346344"
             }
           },
           "parameters": {
@@ -4134,7 +4145,7 @@
                         "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').clientId]"
                       },
                       {
-                        "name": "AZURE_AIPROJECT_CONNECTION_STRING",
+                        "name": "AZURE_EXISTING_AIPROJECT_CONNECTION_STRING",
                         "value": "[parameters('projectConnectionString')]"
                       },
                       {
@@ -4142,7 +4153,7 @@
                         "value": "[parameters('agentName')]"
                       },
                       {
-                        "name": "AZURE_AI_AGENT_ID",
+                        "name": "AZURE_EXISTING_AGENT_ID",
                         "value": "[parameters('agentID')]"
                       },
                       {
@@ -5539,7 +5550,7 @@
       "type": "string",
       "value": "[tenant().tenantId]"
     },
-    "AZURE_AIPROJECT_CONNECTION_STRING": {
+    "AZURE_EXISTING_AIPROJECT_CONNECTION_STRING": {
       "type": "string",
       "value": "[if(empty(if(and(and(empty(parameters('aiExistingProjectConnectionString')), not(empty(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value))), contains(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value, '/')), split(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value, '/')[2], '')), parameters('aiExistingProjectConnectionString'), format('{0};{1};{2};{3}', if(and(and(empty(parameters('aiExistingProjectConnectionString')), not(empty(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value))), contains(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value, '/')), split(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'ai'), '2022-09-01').outputs.discoveryUrl.value, '/')[2], ''), subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))), variables('projectName')))]"
     },
@@ -5571,7 +5582,7 @@
       "type": "string",
       "value": "[parameters('agentName')]"
     },
-    "AZURE_AI_AGENT_ID": {
+    "AZURE_EXISTING_AGENT_ID": {
       "type": "string",
       "value": "[variables('agentID')]"
     },

@@ -199,7 +199,7 @@ async def history(
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
     thread_id = thread.id
-    messages = OpenAIPageableListOfThreadMessage()
+    agent_id = agent.id
 
     # Create a new message from the user's input.
     try:

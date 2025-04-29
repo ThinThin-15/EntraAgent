@@ -5,22 +5,26 @@ targetScope = 'subscription'
 @description('Name of the the environment which is used to generate a short unique hash used in all resources.')
 param environmentName string
 
-@minLength(1)
 @description('Location for all resources')
-// Look for desired models on the availability table:
-// Agents must be supported in the region
+// Based on the model, creating an agent is not supported in all regions. 
+// The combination of allowed and usageName below is for AZD to check AI model gpt-4o-mini quota only for the allowed regions for creating an agent.
+// If using different models, update the SKU,capacity depending on the model you use.
 // https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support
 @allowed([
   'eastus'
   'eastus2'
   'swedencentral'
-  'switzerlandnorth'
   'westus'
   'westus3'
 ])
 @metadata({
   azd: {
     type: 'location'
+    // quota-validation for ai models: gpt-4o-mini & text-embedding-3-small
+    usageName: [
+      'OpenAI.GlobalStandard.gpt-4o-mini,30'
+      'OpenAI.GlobalStandard.text-embedding-3-small,30'
+    ]
   }
 })
 param location string
@@ -58,8 +62,10 @@ param logAnalyticsWorkspaceName string = ''
 param agentModelFormat string = 'OpenAI'
 @description('Name of agent to deploy')
 param agentName string = 'agent-template-assistant'
-@description('ID of agent to deploy')
+@description('(Deprecated) ID of agent to deploy')
 param aiAgentID string = ''
+@description('ID of the existing agent')
+param azureExistingAgentId string = ''
 @description('Name of the chat model to deploy')
 param agentModelName string = 'gpt-4o-mini'
 @description('Name of the model deployment')
@@ -129,7 +135,8 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
 var tags = { 'azd-env-name': environmentName, 'OwningExPTrack': '3P'} // TODO: remove ExP tag
 
-var agentID = !empty(aiAgentID) ? aiAgentID : ''
+var tempAgentID = !empty(aiAgentID) ? aiAgentID : ''
+var agentID = !empty(azureExistingAgentId) ? azureExistingAgentId : tempAgentID
 
 var aiChatModel = [
   {
@@ -447,7 +454,7 @@ output AZURE_RESOURCE_GROUP string = rg.name
 
 // Outputs required for local development server
 output AZURE_TENANT_ID string = tenant().tenantId
-output AZURE_AIPROJECT_CONNECTION_STRING string = projectConnectionString
+output AZURE_EXISTING_AIPROJECT_CONNECTION_STRING string = projectConnectionString
 output AZURE_AI_AGENT_DEPLOYMENT_NAME string = agentDeploymentName
 output AZURE_AI_SEARCH_CONNECTION_NAME string = searchConnectionName
 output AZURE_AI_EMBED_DEPLOYMENT_NAME string = embeddingDeploymentName
@@ -455,8 +462,7 @@ output AZURE_AI_SEARCH_INDEX_NAME string = aiSearchIndexName
 output AZURE_AI_SEARCH_ENDPOINT string = searchServiceEndpoint
 output AZURE_AI_EMBED_DIMENSIONS string = embeddingDeploymentDimensions
 output AZURE_AI_AGENT_NAME string = agentName
-output AZURE_AI_AGENT_ID string = agentID
-output APP_CONFIGURATION_ENDPOINT string = configStore.outputs.endpoint
+output AZURE_EXISTING_AGENT_ID string = agentID
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName

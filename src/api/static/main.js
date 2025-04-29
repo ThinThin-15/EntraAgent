@@ -27,4 +27,7 @@ function initChat() {
 
 document.addEventListener("DOMContentLoaded", initChat);
 
+window.chatUI = chatUI;
+window.chatClient = chatClient;
+
 await chatUI.loadChatHistory();

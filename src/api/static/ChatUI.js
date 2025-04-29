@@ -34,22 +34,31 @@ class ChatUI {
         return content;
     } 
 
-    removePlaceholder() {
-        // Remove placeholder message if it exists
+    showPlaceholder(show) {
+        // show/hide placeholder message if it exists
         const placeholderWrapper = document.getElementById("placeholder-wrapper");
         if (placeholderWrapper) {
-            placeholderWrapper.remove();
+            placeholderWrapper.style.display = show? "flex": "none";
         }            
     }    
 
-    addNewThreadClickListener() {
-        const newThreadButton = document.getElementById('new-thread-button');
-        newThreadButton.addEventListener('click', async () => {
-            // Clear the chat messages and the thread_id cookie         
-            document.querySelectorAll('.toast-container').forEach(element => element.remove());
-            document.cookie = "thread_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            console.log("thread_id cookie cleared to start new thread");
-        });    
+    clearChat() {
+        const placeholderWrapper = document.getElementById("placeholder-wrapper");
+        const targetContainer = document.getElementById("messages");
+        while (targetContainer.lastChild && targetContainer.lastChild != placeholderWrapper) {
+            targetContainer.removeChild(targetContainer.lastChild);
+        }
+        this.showPlaceholder(true)
+
+        this.deleteAllCookies();
+    }
+
+    deleteAllCookies() {
+        document.cookie.split(';').forEach(cookie => {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        });
     }
 
     addCitationClickListener() {
@@ -138,7 +147,7 @@ class ChatUI {
 
     appendUserMessage(message) {
         // Remove the placeholder message
-        this.removePlaceholder();
+        this.showPlaceholder(false);
 
         const userTemplateClone = this.userTemplate.content.cloneNode(true);
         userTemplateClone.querySelector(".message-content").textContent = message;
@@ -159,13 +168,12 @@ class ChatUI {
             const preprocessedContent = this.preprocessContent(accumulatedContent, annotations);
             // Convert the accumulated content to HTML using markdown-it
             let htmlContent = md.render(preprocessedContent);
-            const messageTextDiv = messageDiv.querySelector(".message-text");
-            if (!messageTextDiv) {
+            if (!messageDiv) {
                 throw new Error("Message content div not found in the template.");
             }
     
             // Set the innerHTML of the message text div to the HTML content
-            messageTextDiv.innerHTML = htmlContent;
+            messageDiv.innerHTML = htmlContent;
             
             // Use requestAnimationFrame to ensure the DOM has updated before scrolling
             // Only scroll if not streaming
@@ -180,9 +188,8 @@ class ChatUI {
     }
 
     clearAssistantMessage(messageDiv) {
-        const messageTextDiv = messageDiv.querySelector(".message-text");
-        if (messageTextDiv) {
-            messageTextDiv.innerHTML = '';
+        if (messageDiv) {
+            messageDiv.innerHTML = '';
         }
     }
 
@@ -194,8 +201,8 @@ class ChatUI {
         }
 
         // Remove the placeholder message
-        this.removePlaceholder();
-  
+        this.showPlaceholder(false);
+    
         // Append the clone to the target container
         this.targetContainer.appendChild(assistantTemplateClone);
     
