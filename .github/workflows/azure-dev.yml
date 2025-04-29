@@ -77,9 +77,6 @@ jobs:
       - name: Deploy Application
         run: azd deploy --no-prompt
 
-  deploy-experiments:
-        name: Deploy Experiments
-        needs: build
   update-experiments:
         name: Update Experiments
         needs: build

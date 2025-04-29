@@ -189,9 +189,6 @@ var resolvedSearchServiceName = !useSearchService
   ? ''
   : !empty(searchServiceName) ? searchServiceName : '${abbrs.searchSearchServices}${resourceToken}'
 
-
-var containerRegistryResolvedName = '${abbrs.containerRegistryRegistries}${resourceToken}'
-
 module ai 'core/host/ai-environment.bicep' = if (empty(aiExistingProjectConnectionString)) {
   name: 'ai'
   scope: rg
@@ -211,7 +208,6 @@ module ai 'core/host/ai-environment.bicep' = if (empty(aiExistingProjectConnecti
     applicationInsightsName: !useApplicationInsights
       ? ''
       : !empty(applicationInsightsName) ? applicationInsightsName : '${abbrs.insightsComponents}${resourceToken}'
-    containerRegistryName: containerRegistryResolvedName
     searchServiceName: resolvedSearchServiceName
     searchConnectionName: !useSearchService
       ? ''
@@ -275,9 +271,6 @@ module containerApps 'core/host/container-apps.bicep' = {
     location: location
     tags: tags
     containerAppsEnvironmentName: 'containerapps-env-${resourceToken}'
-    containerRegistryName: empty(aiExistingProjectConnectionString)
-      ? ai.outputs.containerRegistryName
-      : containerRegistryResolvedName
     logAnalyticsWorkspaceName: empty(aiExistingProjectConnectionString)
       ? ai.outputs.logAnalyticsWorkspaceName
       : logAnalytics.outputs.name
@@ -307,7 +300,6 @@ module api 'api.bicep' = {
     tags: tags
     identityName: '${abbrs.managedIdentityUserAssignedIdentities}api-${resourceToken}'
     containerAppsEnvironmentName: containerApps.outputs.environmentName
-    containerRegistryName: containerApps.outputs.registryName
     projectConnectionString: projectConnectionString
     agentDeploymentName: agentDeploymentName
     searchConnectionName: searchConnectionName
@@ -448,8 +440,6 @@ module backendRoleAzureAIDeveloperRG 'core/security/role.bicep' = {
   }
 }
 
-
-
 output AZURE_RESOURCE_GROUP string = rg.name
 
 // Outputs required for local development server
@@ -466,8 +456,6 @@ output AZURE_EXISTING_AGENT_ID string = agentID
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName
-output AZURE_CONTAINER_REGISTRY_NAME string = containerApps.outputs.registryName
-output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerApps.outputs.registryLoginServer
 output SERVICE_API_IDENTITY_PRINCIPAL_ID string = api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output SERVICE_API_URI string = api.outputs.SERVICE_API_URI
