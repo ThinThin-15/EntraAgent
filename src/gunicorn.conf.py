@@ -31,7 +31,23 @@ load_dotenv()
 
 logger = configure_logging(os.getenv("APP_LOG_FILE", ""))
 
-FILES_NAMES = ["product_info_1.md", "product_info_2.md"]
+
+agentID = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get(
+    "AZURE_EXISTING_AGENT_ID") else os.environ.get(
+        "AZURE_AI_AGENT_ID")
+    
+connection_string = os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") if os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") else os.environ.get("AZURE_AIPROJECT_CONNECTION_STRING")
+
+def list_files_in_files_directory() -> List[str]:    
+    # Get the absolute path of the 'files' directory
+    files_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), 'files'))
+    
+    # List all files in the 'files' directory
+    files = [f for f in os.listdir(files_directory) if os.path.isfile(os.path.join(files_directory, f))]
+    
+    return files
+
+FILES_NAMES = list_files_in_files_directory()
 
 
 async def create_index_maybe(
@@ -190,22 +206,22 @@ async def initialize_resources():
                 exclude_shared_token_cache_credential=True) as creds:
             async with AIProjectClient.from_connection_string(
                 credential=creds,
-                conn_str=os.environ["AZURE_AIPROJECT_CONNECTION_STRING"],
+                conn_str=connection_string,
             ) as ai_client:
-                # If the environment already has AZURE_AI_AGENT_ID, try
+                # If the environment already has AZURE_AI_AGENT_ID or AZURE_EXISTING_AGENT_ID, try
                 # fetching that agent
-                if os.environ.get("AZURE_AI_AGENT_ID") is not None:
+                if agentID is not None:
                     try:
                         agent = await ai_client.agents.get_agent(
-                            os.environ["AZURE_AI_AGENT_ID"])
+                            agentID)
                         logger.info(f"Found agent by ID: {agent.id}")
                         # Update the agent with the latest resources
                         agent = await update_agent(agent, ai_client, creds)
                         return
                     except Exception as e:
                         logger.warning(
-                            "Could not retrieve agent by AZURE_AI_AGENT_ID = "
-                            f"{os.environ['AZURE_AI_AGENT_ID']}, error: {e}")
+                            "Could not retrieve agent by AZURE_EXISTING_AGENT_ID = "
+                            f"{agentID}, error: {e}")
 
                 # Check if an agent with the same name already exists
                 agent_list = await ai_client.agents.list_agents()
@@ -217,7 +233,7 @@ async def initialize_resources():
                                 "Found existing agent named "
                                 f"'{agent_object.name}'"
                                 f", ID: {agent_object.id}")
-                            os.environ["AZURE_AI_AGENT_ID"] = agent_object.id
+                            os.environ["AZURE_EXISTING_AGENT_ID"] = agent_object.id
                             # Update the agent with the latest resources
                             agent = await update_agent(
                                 agent_object, ai_client, creds)
@@ -225,7 +241,7 @@ async def initialize_resources():
 
                 # Create a new agent
                 agent = await create_agent(ai_client, creds)
-                os.environ["AZURE_AI_AGENT_ID"] = agent.id
+                os.environ["AZURE_EXISTING_AGENT_ID"] = agent.id
                 logger.info(f"Created agent, agent ID: {agent.id}")
 
     except Exception as e:

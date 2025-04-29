@@ -5,22 +5,26 @@ targetScope = 'subscription'
 @description('Name of the the environment which is used to generate a short unique hash used in all resources.')
 param environmentName string
 
-@minLength(1)
 @description('Location for all resources')
-// Look for desired models on the availability table:
-// Agents must be supported in the region
+// Based on the model, creating an agent is not supported in all regions. 
+// The combination of allowed and usageName below is for AZD to check AI model gpt-4o-mini quota only for the allowed regions for creating an agent.
+// If using different models, update the SKU,capacity depending on the model you use.
 // https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support
 @allowed([
   'eastus'
   'eastus2'
   'swedencentral'
-  'switzerlandnorth'
   'westus'
   'westus3'
 ])
 @metadata({
   azd: {
     type: 'location'
+    // quota-validation for ai models: gpt-4o-mini & text-embedding-3-small
+    usageName: [
+      'OpenAI.GlobalStandard.gpt-4o-mini,30'
+      'OpenAI.GlobalStandard.text-embedding-3-small,30'
+    ]
   }
 })
 param location string
@@ -58,8 +62,10 @@ param logAnalyticsWorkspaceName string = ''
 param agentModelFormat string = 'OpenAI'
 @description('Name of agent to deploy')
 param agentName string = 'agent-template-assistant'
-@description('ID of agent to deploy')
+@description('(Deprecated) ID of agent to deploy')
 param aiAgentID string = ''
+@description('ID of the existing agent')
+param azureExistingAgentId string = ''
 @description('Name of the chat model to deploy')
 param agentModelName string = 'gpt-4o-mini'
 @description('Name of the model deployment')
@@ -111,9 +117,9 @@ param useApplicationInsights bool = true
 param useAppConfiguration bool = true
 
 @description('Sku for the App Configuration')
-// Recommend to upgrade for production use. See pricing plan:
-// https://azure.microsoft.com/en-us/pricing/details/app-configuration/
-param appConfigurationSku string = 'free' 
+ // Recommend to upgrade for production use. See pricing plan:
+ // https://azure.microsoft.com/en-us/pricing/details/app-configuration/
+ param appConfigurationSku string = 'free' 
 
 @description('Do we want to use the Azure AI Search')
 param useSearchService bool = false
@@ -129,7 +135,8 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 var projectName = !empty(aiProjectName) ? aiProjectName : 'ai-project-${resourceToken}'
 var tags = { 'azd-env-name': environmentName }
 
-var agentID = !empty(aiAgentID) ? aiAgentID : ''
+var tempAgentID = !empty(aiAgentID) ? aiAgentID : ''
+var agentID = !empty(azureExistingAgentId) ? azureExistingAgentId : tempAgentID
 
 var aiChatModel = [
   {
@@ -182,6 +189,9 @@ var resolvedSearchServiceName = !useSearchService
   ? ''
   : !empty(searchServiceName) ? searchServiceName : '${abbrs.searchSearchServices}${resourceToken}'
 
+
+var containerRegistryResolvedName = '${abbrs.containerRegistryRegistries}${resourceToken}'
+
 module ai 'core/host/ai-environment.bicep' = if (empty(aiExistingProjectConnectionString)) {
   name: 'ai'
   scope: rg
@@ -201,6 +211,7 @@ module ai 'core/host/ai-environment.bicep' = if (empty(aiExistingProjectConnecti
     applicationInsightsName: !useApplicationInsights
       ? ''
       : !empty(applicationInsightsName) ? applicationInsightsName : '${abbrs.insightsComponents}${resourceToken}'
+    containerRegistryName: containerRegistryResolvedName
     searchServiceName: resolvedSearchServiceName
     searchConnectionName: !useSearchService
       ? ''
@@ -264,6 +275,9 @@ module containerApps 'core/host/container-apps.bicep' = {
     location: location
     tags: tags
     containerAppsEnvironmentName: 'containerapps-env-${resourceToken}'
+    containerRegistryName: empty(aiExistingProjectConnectionString)
+      ? ai.outputs.containerRegistryName
+      : containerRegistryResolvedName
     logAnalyticsWorkspaceName: empty(aiExistingProjectConnectionString)
       ? ai.outputs.logAnalyticsWorkspaceName
       : logAnalytics.outputs.name
@@ -293,6 +307,7 @@ module api 'api.bicep' = {
     tags: tags
     identityName: '${abbrs.managedIdentityUserAssignedIdentities}api-${resourceToken}'
     containerAppsEnvironmentName: containerApps.outputs.environmentName
+    containerRegistryName: containerApps.outputs.registryName
     projectConnectionString: projectConnectionString
     agentDeploymentName: agentDeploymentName
     searchConnectionName: searchConnectionName
@@ -304,6 +319,24 @@ module api 'api.bicep' = {
     agentID: agentID
     projectName: projectName
     appConfigurationEndpoint: configStore.outputs.endpoint
+  }
+}
+
+module userRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'user-role-config-store-data-owner'
+  scope: rg
+  params: {
+    principalId: principalId
+    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' 
+  }
+}
+
+module backendRoleConfigStoreDataOwner 'core/security/role.bicep' = {
+  name: 'backend-role-config-store-data-reader'
+  scope: rg
+  params: {
+    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '516239f1-63e1-4d78-a4de-a74fb236a071' 
   }
 }
 
@@ -415,29 +448,13 @@ module backendRoleAzureAIDeveloperRG 'core/security/role.bicep' = {
   }
 }
 
-module userRoleConfigStoreDataOwner 'core/security/role.bicep' = {
-  name: 'user-role-config-store-data-owner'
-  scope: rg
-  params: {
-    principalId: principalId
-    roleDefinitionId: '5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b' 
-  }
-}
 
-module backendRoleConfigStoreDataOwner 'core/security/role.bicep' = {
-  name: 'backend-role-config-store-data-reader'
-  scope: rg
-  params: {
-    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
-    roleDefinitionId: '516239f1-63e1-4d78-a4de-a74fb236a071' 
-  }
-}
 
 output AZURE_RESOURCE_GROUP string = rg.name
 
 // Outputs required for local development server
 output AZURE_TENANT_ID string = tenant().tenantId
-output AZURE_AIPROJECT_CONNECTION_STRING string = projectConnectionString
+output AZURE_EXISTING_AIPROJECT_CONNECTION_STRING string = projectConnectionString
 output AZURE_AI_AGENT_DEPLOYMENT_NAME string = agentDeploymentName
 output AZURE_AI_SEARCH_CONNECTION_NAME string = searchConnectionName
 output AZURE_AI_EMBED_DEPLOYMENT_NAME string = embeddingDeploymentName
@@ -445,11 +462,12 @@ output AZURE_AI_SEARCH_INDEX_NAME string = aiSearchIndexName
 output AZURE_AI_SEARCH_ENDPOINT string = searchServiceEndpoint
 output AZURE_AI_EMBED_DIMENSIONS string = embeddingDeploymentDimensions
 output AZURE_AI_AGENT_NAME string = agentName
-output AZURE_AI_AGENT_ID string = agentID
-output APP_CONFIGURATION_ENDPOINT string = configStore.outputs.endpoint
+output AZURE_EXISTING_AGENT_ID string = agentID
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName
+output AZURE_CONTAINER_REGISTRY_NAME string = containerApps.outputs.registryName
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerApps.outputs.registryLoginServer
 output SERVICE_API_IDENTITY_PRINCIPAL_ID string = api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output SERVICE_API_URI string = api.outputs.SERVICE_API_URI

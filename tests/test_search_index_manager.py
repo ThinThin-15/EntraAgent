@@ -16,6 +16,7 @@ from azure.core.exceptions import HttpResponseError
 
 from ddt import ddt, data
 
+connection_string = os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") if os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") else os.environ.get("AZURE_AIPROJECT_CONNECTION_STRING")
 
 class MockAsyncIterator:
 
@@ -128,7 +129,7 @@ class TestSearchIndexManager(unittest.IsolatedAsyncioTestCase):
         async with DefaultAzureCredential() as creds:
             async with AIProjectClient.from_connection_string(
                 credential=creds,
-                conn_str=os.environ["AZURE_AIPROJECT_CONNECTION_STRING"],
+                conn_str=connection_string,
             ) as project:
                 aoai_connection = await project.connections.get_default(
                     connection_type=ConnectionType.AZURE_OPEN_AI,
@@ -246,7 +247,7 @@ class TestSearchIndexManager(unittest.IsolatedAsyncioTestCase):
         async with DefaultAzureCredential() as creds:
             async with AIProjectClient.from_connection_string(
                 credential=creds,
-                conn_str=os.environ["AZURE_AIPROJECT_CONNECTION_STRING"],
+                conn_str=connection_string,
             ) as project:
                 aoai_connection = await project.connections.get_default(
                     connection_type=ConnectionType.AZURE_OPEN_AI)

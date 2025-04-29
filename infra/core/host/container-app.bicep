@@ -25,6 +25,12 @@ param containerMinReplicas int = 1
 @description('The name of the container')
 param containerName string = 'main'
 
+@description('The name of the container registry')
+param containerRegistryName string = ''
+
+@description('Hostname suffix for container registry. Set when deploying to sovereign clouds')
+param containerRegistryHostSuffix string = 'azurecr.io'
+
 @description('The protocol used by Dapr to connect to the app, e.g., http or grpc')
 @allowed([ 'http', 'grpc' ])
 param daprAppProtocol string = 'http'
@@ -48,6 +54,8 @@ param identityName string = ''
 @allowed([ 'None', 'SystemAssigned', 'UserAssigned' ])
 param identityType string = 'None'
 
+@description('The name of the container image')
+param imageName string = ''
 
 @description('Specifies if Ingress is enabled for the container app')
 param ingressEnabled bool = true
@@ -76,6 +84,17 @@ resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-
 // Automatically set to `UserAssigned` when an `identityName` has been set
 var normalizedIdentityType = !empty(identityName) ? 'UserAssigned' : identityType
 
+// Private registry support requires both an ACR name and a User Assigned managed identity
+var usePrivateRegistry = !empty(identityName) && !empty(containerRegistryName)
+
+module containerRegistryAccess '../security/registry-access.bicep' = if (usePrivateRegistry) {
+  name: '${deployment().name}-registry-access'
+  params: {
+    containerRegistryName: containerRegistryName
+    principalId: usePrivateRegistry ? userIdentity.properties.principalId : ''
+  }
+}
+
 resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   name: name
   location: location
@@ -84,7 +103,7 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
   // otherwise the container app will throw a provision error
   // This also forces us to use an user assigned managed identity since there would no way to 
   // provide the system assigned identity with the ACR pull access before the app is created
-  dependsOn: empty(dependOn)? [] : [dependOn]
+  dependsOn: usePrivateRegistry ? [ containerRegistryAccess ] : []
   identity: {
     type: normalizedIdentityType
     userAssignedIdentities: !empty(identityName) && normalizedIdentityType == 'UserAssigned' ? { '${userIdentity.id}': {} } : null
@@ -112,7 +131,12 @@ resource app 'Microsoft.App/containerApps@2023-05-02-preview' = {
         value: secret.value
       }]
       service: !empty(serviceType) ? { type: serviceType } : null
-      registries: []
+      registries: usePrivateRegistry ? [
+        {
+          server: '${containerRegistryName}.${containerRegistryHostSuffix}'
+          identity: userIdentity.id
+        }
+      ] : []
     }
     template: {
       serviceBinds: !empty(serviceBinds) ? serviceBinds : null
@@ -141,6 +165,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01'
 
 output defaultDomain string = containerAppsEnvironment.properties.defaultDomain
 output identityPrincipalId string = normalizedIdentityType == 'None' ? '' : (empty(identityName) ? app.identity.principalId : userIdentity.properties.principalId)
+output imageName string = imageName
 output name string = app.name
 output serviceBind object = !empty(serviceType) ? { serviceId: app.id, name: name } : {}
 output uri string = ingressEnabled ? 'https://${app.properties.configuration.ingress.fqdn}' : ''

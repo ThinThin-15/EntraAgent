@@ -27,10 +27,12 @@ logger = None
 async def lifespan(app: fastapi.FastAPI):
     agent = None
 
+    connection_string = os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") if os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") else os.environ.get("AZURE_AIPROJECT_CONNECTION_STRING")
+    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
     try:
         ai_client = AIProjectClient.from_connection_string(
             credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
-            conn_str=os.environ["AZURE_AIPROJECT_CONNECTION_STRING"],
+            conn_str=connection_string,
         )
         logger.info("Created AIProjectClient")
 
@@ -74,9 +76,9 @@ async def lifespan(app: fastapi.FastAPI):
                     except Exception as e:
                         logger.warning("Failed to setup App Configuration", exc_info=True)
 
-        if os.environ.get("AZURE_AI_AGENT_ID"):
+        if agent_id:
             try: 
-                agent = await ai_client.agents.get_agent(os.environ["AZURE_AI_AGENT_ID"])
+                agent = await ai_client.agents.get_agent(agent_id)
                 logger.info("Agent already exists, skipping creation")
                 logger.info(f"Fetched agent, agent ID: {agent.id}")
                 logger.info(f"Fetched agent, model name: {agent.model}")
@@ -95,7 +97,7 @@ async def lifespan(app: fastapi.FastAPI):
                         break
 
         if not agent:
-            raise RuntimeError("No agent found. Ensure qunicorn.py created one or set AZURE_AI_AGENT_ID.")
+            raise RuntimeError("No agent found. Ensure qunicorn.py created one or set AZURE_EXISTING_AGENT_ID.")
 
         app.state.ai_client = ai_client
         app.state.agent = agent

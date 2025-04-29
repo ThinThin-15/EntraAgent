@@ -35,6 +35,7 @@ module hubDependencies '../ai/hub-dependencies.bicep' = {
     tags: tags
     keyVaultName: keyVaultName
     storageAccountName: storageAccountName
+    containerRegistryName: containerRegistryName
     applicationInsightsName: applicationInsightsName
     logAnalyticsName: logAnalyticsName
     aiServicesName: aiServicesName
@@ -91,6 +92,10 @@ output keyVaultEndpoint string = hubDependencies.outputs.keyVaultEndpoint
 // Application Insights
 output applicationInsightsName string = hubDependencies.outputs.applicationInsightsName
 output logAnalyticsWorkspaceName string = hubDependencies.outputs.logAnalyticsWorkspaceName
+
+// Container Registry
+output containerRegistryName string = hubDependencies.outputs.containerRegistryName
+output containerRegistryEndpoint string = hubDependencies.outputs.containerRegistryEndpoint
 
 // Storage Account
 output storageAccountName string = hubDependencies.outputs.storageAccountName

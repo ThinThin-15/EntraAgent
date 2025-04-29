@@ -23,6 +23,12 @@ param containerMinReplicas int = 1
 @description('The name of the container')
 param containerName string = 'main'
 
+@description('The name of the container registry')
+param containerRegistryName string = ''
+
+@description('Hostname suffix for container registry. Set when deploying to sovereign clouds')
+param containerRegistryHostSuffix string = 'azurecr.io'
+
 @allowed([ 'http', 'grpc' ])
 @description('The protocol used by Dapr to connect to the app, e.g., HTTP or gRPC')
 param daprAppProtocol string = 'http'
@@ -42,6 +48,9 @@ param identityType string = 'None'
 
 @description('The name of the user-assigned identity')
 param identityName string = ''
+
+@description('The name of the container image')
+param imageName string = ''
 
 @description('The secrets required for the container')
 @secure()
@@ -73,6 +82,8 @@ module app 'container-app.bicep' = {
     ingressEnabled: ingressEnabled
     containerName: containerName
     containerAppsEnvironmentName: containerAppsEnvironmentName
+    containerRegistryName: containerRegistryName
+    containerRegistryHostSuffix: containerRegistryHostSuffix
     containerCpuCoreCount: containerCpuCoreCount
     containerMemory: containerMemory
     containerMinReplicas: containerMinReplicas
@@ -83,6 +94,7 @@ module app 'container-app.bicep' = {
     secrets: secrets
     external: external
     env: env
+    imageName: imageName
     targetPort: targetPort
     serviceBinds: serviceBinds
     dependOn: projectName
@@ -90,5 +102,6 @@ module app 'container-app.bicep' = {
 }
 
 output defaultDomain string = app.outputs.defaultDomain
+output imageName string = app.outputs.imageName
 output name string = app.outputs.name
 output uri string = app.outputs.uri

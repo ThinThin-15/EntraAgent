@@ -22,9 +22,9 @@ Once you disable these resources, they will not be deployed when you run `azd up
 By default, this template will use a naming convention with unique strings to prevent naming collisions within Azure.
 To override default naming conventions, the following keys can be set:
 
+* `AZURE_EXISTING_AIPROJECT_CONNECTION_STRING` - An existing connection string to be use.   If specified, resources for AI Foundry Hub,  AI Foundry Project, and Azure AI service will not be created.
 * `AZURE_AIHUB_NAME` - The name of the AI Foundry Hub resource
 * `AZURE_AIPROJECT_NAME` - The name of the AI Foundry Project
-* `AZURE_AIENDPOINT_NAME` - The name of the AI Foundry online endpoint used for deployments
 * `AZURE_AISERVICES_NAME` - The name of the Azure AI service
 * `AZURE_SEARCH_SERVICE_NAME` - The name of the Azure Search service
 * `AZURE_STORAGE_ACCOUNT_NAME` - The name of the Storage Account

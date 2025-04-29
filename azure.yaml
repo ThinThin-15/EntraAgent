@@ -2,9 +2,17 @@
 # TODO: do we need hooks? 
 # TODO: do we need all of the variables?
 
-name: azd-get-started-with-ai-agents
+name: azd-get-started-with-ai-agents-aprilk
 metadata:
   template: azd-get-started-with-ai-agents@0.0.1-beta
+
+services:
+  api:
+    project: ./src
+    language: py
+    host: containerapp
+    docker:
+      remoteBuild: true
 
 hooks:
   postprovision:
