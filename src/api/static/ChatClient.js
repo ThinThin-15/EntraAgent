@@ -45,10 +45,8 @@ class ChatClient {
                 throw new Error('ReadableStream not supported or response.body is null');
             }
 
-            const agentVariant = response.headers.get('agent-variant');
-
             console.log("[ChatClient] Starting to handle streaming response...");
-            this.handleMessages(response.body, agentVariant);
+            this.handleMessages(response.body);
 
         } catch (error) {
             document.getElementById("generating-message").style.display = "none";
@@ -63,7 +61,7 @@ class ChatClient {
         }
     }
 
-    handleMessages(stream, agentVariant) {
+    handleMessages(stream) {
         let messageDiv = null;
         let accumulatedContent = '';
         let isStreaming = true;
@@ -112,7 +110,7 @@ class ChatClient {
 
                         if (data.error) {
                             if (!messageDiv) {
-                                messageDiv = this.ui.createAssistantMessageDiv(agentVariant);
+                                messageDiv = this.ui.createAssistantMessageDiv();
                                 console.log("[ChatClient] Created new messageDiv for assistant.");
                             }
                             document.getElementById("generating-message").style.display = "none";
@@ -137,7 +135,7 @@ class ChatClient {
                         } else {
                             // If we have no messageDiv yet, create one
                             if (!messageDiv) {
-                                messageDiv = this.ui.createAssistantMessageDiv(agentVariant);
+                                messageDiv = this.ui.createAssistantMessageDiv();
                                 console.log("[ChatClient] Created new messageDiv for assistant.");
                             }
                             

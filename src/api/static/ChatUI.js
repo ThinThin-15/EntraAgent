@@ -11,7 +11,6 @@ class ChatUI {
         }
         this.addCitationClickListener();
         this.attachCloseButtonListener();
-        this.addNewThreadClickListener();
     }
 
     preprocessContent(content, annotations) {
@@ -51,6 +50,12 @@ class ChatUI {
         this.showPlaceholder(true)
 
         this.deleteAllCookies();
+    }
+
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
     deleteAllCookies() {
@@ -155,7 +160,7 @@ class ChatUI {
         this.scrollToBottom();
     }
 
-    appendAssistantMessage(messageDiv, accumulatedContent, isStreaming, annotations) {
+    appendAssistantMessage(messageDiv, accumulatedContent, isStreaming, annotations, agentId) {
         const md = window.markdownit({
             html: true,
             linkify: true,
@@ -174,6 +179,9 @@ class ChatUI {
     
             // Set the innerHTML of the message text div to the HTML content
             messageDiv.innerHTML = htmlContent;
+            var tooltip = "Agent Id: " + this.getCookie("agent_id") + "\n"
+            tooltip += "Thread Id: " + this.getCookie("thread_id") + "\n"
+            messageDiv.setAttribute("title", tooltip);
             
             // Use requestAnimationFrame to ensure the DOM has updated before scrolling
             // Only scroll if not streaming
@@ -193,7 +201,7 @@ class ChatUI {
         }
     }
 
-    createAssistantMessageDiv(agentVariant) {        
+    createAssistantMessageDiv() {        
         const assistantTemplateClone = this.assistantTemplate.content.cloneNode(true);
         if (!assistantTemplateClone) {
             console.error("Failed to clone assistant template.");
@@ -222,15 +230,7 @@ class ChatUI {
         if (!messageDiv) {
             console.error("Message content div not found in the template.");
         }
-
-        // Update message title if a variant is used
-        if (agentVariant) {
-            const messageTitleDiv = newlyAddedToast.querySelector(".message-title");
-            if (messageTitleDiv) {
-                messageTitleDiv.innerHTML += ` (Variant: ${agentVariant})`;
-            } 
-        }
-    
+ 
         return messageDiv;
     }
     
