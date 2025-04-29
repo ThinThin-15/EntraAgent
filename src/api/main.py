@@ -123,8 +123,9 @@ def create_app():
     app.mount("/static", StaticFiles(directory=directory), name="static")
     
     # Mount React static files
-    react_directory = os.path.join(os.path.dirname(__file__), "static/react")
-    app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
+    # Uncomment the following lines if you have a React frontend
+    # react_directory = os.path.join(os.path.dirname(__file__), "static/react")
+    # app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
 
     from . import routes  # Import routes
     app.include_router(routes.router)
