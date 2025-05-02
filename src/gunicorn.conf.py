@@ -272,3 +272,8 @@ workers = (num_cpus * 2) + 1
 worker_class = "uvicorn.workers.UvicornWorker"
 
 timeout = 120
+
+if __name__ == "__main__":
+    print("Running initialize_resources directly...")
+    asyncio.run(initialize_resources())
+    print("initialize_resources finished.")
