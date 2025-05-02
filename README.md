@@ -221,16 +221,21 @@ You can optionally use a local development server to test app changes locally. M
 4. Duplicate `src/.env.sample` and name to `.env`.
 
 5. Fill in the environment variables in `.env`.
+   
+6. (Optional) If you have change in `gunicorn.conf.py`, execute:
+    ```shell
+    python gunicorn.conf.py    
+    ```
 
-6. Run the local server:
+7. Run the local server:
 
     ```shell
     python -m uvicorn "api.main:create_app" --factory --reload
     ```
 
-7. Click 'http://127.0.0.1:8000' in the terminal, which should open a new tab in the browser.
+8. Click 'http://127.0.0.1:8000' in the terminal, which should open a new tab in the browser.
 
-8. Enter your message in the box.
+9.  Enter your message in the box.
 </details>
 
 ### Deploying Steps
