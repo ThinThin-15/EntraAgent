@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 def run_evaluation():
     """Demonstrate how to evaluate an AI agent using the Azure AI Project SDK"""
     current_dir = Path(__file__).parent
+    eval_queries_path = current_dir / "eval-queries.json"
     eval_input_path = current_dir / f"eval-input.jsonl"
     eval_output_path = current_dir / f"eval-output.json"
 
@@ -47,7 +48,7 @@ def run_evaluation():
     thread_data_converter = AIAgentConverter(project_client)
 
     # Read data input file 
-    with open(current_dir / "test-data.json", "r", encoding="utf-8") as f:
+    with open(eval_queries_path, "r", encoding="utf-8") as f:
         test_data = json.load(f)
     
     # Execute the test data against the agent and prepare the evaluation input
@@ -103,15 +104,14 @@ def run_evaluation():
             "task_adherence": task_adherence,
             "operational_metrics": OperationalMetricsEvaluator(),
         },
-        #azure_ai_project=project_client.scope, # uncomment to upload result to AI Foundry
-        output_path=eval_output_path
+        output_path=eval_output_path, # raw evaluation results
+        azure_ai_project=project_client.scope, # needed only if you want results uploaded to AI Foundry
     )
 
     # Print the evaluation results
     print_eval_results(results, eval_input_path, eval_output_path)
     
     return results
-
 
 class OperationalMetricsEvaluator:
     """Propagate operational metrics to the final evaluation results"""
@@ -152,7 +152,7 @@ def print_eval_results(results, input_path, output_path):
     # Print additional information
     print(f"Evaluation input: {input_path}")
     print(f"Evaluation output: {output_path}")
-    if "studio_url" in results:
+    if results.get("studio_url") is not None:
         print(f"AI Foundry URL: {results['studio_url']}")
 
     print("\n" + "=" * full_len + "\n")

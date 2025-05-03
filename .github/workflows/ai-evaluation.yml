@@ -30,4 +30,4 @@ jobs:
           azure-aiproject-connection-string: ${{ vars.AZURE_EXISTING_AIPROJECT_CONNECTION_STRING || vars.AZURE_AIPROJECT_CONNECTION_STRING }}
           deployment-name: ${{ vars.AZURE_AI_AGENT_DEPLOYMENT_NAME }}
           agent-ids: ${{ vars.AZURE_EXISTING_AGENT_ID || vars.AZURE_AI_AGENT_ID }}
-          data-path: ${{ github.workspace }}/evals/test-data.json
+          data-path: ${{ github.workspace }}/evals/test-data-workflow.json
