@@ -2,7 +2,7 @@
 # TODO: do we need hooks? 
 # TODO: do we need all of the variables?
 
-name: azd-get-started-with-ai-agents
+name: azd-get-started-with-ai-agents-golden-path
 metadata:
   template: azd-get-started-with-ai-agents@0.0.1-beta
 
@@ -50,4 +50,4 @@ pipeline:
     - AZURE_AI_EMBED_MODEL_VERSION
     - AZURE_AI_EMBED_DIMENSIONS
     - AZURE_AI_SEARCH_INDEX_NAME
-    - AZURE_EXISTING_AIPROJECT_CONNECTION_STRING
+    - AZURE_EXISTING_AIPROJECT_RESOURCE_ID
