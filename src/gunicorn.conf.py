@@ -12,14 +12,14 @@ import os
 import sys
 
 from azure.ai.projects.aio import AIProjectClient
-from azure.ai.projects.models import (
+from azure.ai.agents.models import (
     Agent,
     AsyncToolSet,
     AzureAISearchTool,
-    ConnectionType,
     FilePurpose,
     FileSearchTool,
 )
+from azure.ai.projects.models import ConnectionType
 from azure.identity.aio import DefaultAzureCredential
 from azure.core.credentials_async import AsyncTokenCredential
 
@@ -67,7 +67,7 @@ async def create_index_maybe(
     endpoint = os.environ.get('AZURE_AI_SEARCH_ENDPOINT')
     embedding = os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME')
     if endpoint and embedding:
-        aoai_connection = await ai_client.connections.get_default(
+        aoai_connection = await ai_client.connections.get(
             connection_type=ConnectionType.AZURE_OPEN_AI,
             include_credentials=True)
         if aoai_connection is None or aoai_connection.key is None:
@@ -117,7 +117,7 @@ def _get_file_path(file_name: str) -> str:
 
 
 async def get_available_toolset(
-        ai_client: AIProjectClient,
+        project_client: AIProjectClient,
         creds: AsyncTokenCredential) -> AsyncToolSet:
     """
     Get the toolset and tool definition for the agent.
@@ -131,15 +131,15 @@ async def get_available_toolset(
     # First try to get an index search.
     conn_id = ""
     if os.environ.get('AZURE_AI_SEARCH_INDEX_NAME'):
-        conn_list = await ai_client.connections.list()
-        for conn in conn_list:
-            if conn.connection_type == ConnectionType.AZURE_AI_SEARCH:
+        conn_list = project_client.connections.list()
+        async for conn in conn_list:
+            if conn.type == ConnectionType.AZURE_AI_SEARCH:
                 conn_id = conn.id
                 break
 
     toolset = AsyncToolSet()
     if conn_id:
-        await create_index_maybe(ai_client, creds)
+        await create_index_maybe(project_client, creds)
 
         ai_search = AzureAISearchTool(
             index_connection_id=conn_id,
@@ -153,13 +153,13 @@ async def get_available_toolset(
         # Upload files for file search
         for file_name in FILES_NAMES:
             file_path = _get_file_path(file_name)
-            file = await ai_client.agents.upload_file_and_poll(
+            file = await project_client.agents.files.upload_and_poll(
                 file_path=file_path, purpose=FilePurpose.AGENTS)
             # Store both file id and the file path using the file name as key.
             file_ids.append(file.id)
 
         # Create the vector store using the file IDs.
-        vector_store = await ai_client.agents.create_vector_store_and_poll(
+        vector_store = await project_client.agents.vector_stores.create_and_poll(
             file_ids=file_ids,
             name="sample_store"
         )
@@ -204,9 +204,9 @@ async def initialize_resources():
     try:
         async with DefaultAzureCredential(
                 exclude_shared_token_cache_credential=True) as creds:
-            async with AIProjectClient.from_connection_string(
+            async with AIProjectClient(
                 credential=creds,
-                conn_str=connection_string,
+                endpoint=connection_string,
             ) as ai_client:
                 # If the environment already has AZURE_AI_AGENT_ID or AZURE_EXISTING_AGENT_ID, try
                 # fetching that agent
