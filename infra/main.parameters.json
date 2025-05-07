@@ -101,8 +101,8 @@
     "apiAppExists": {
       "value": "${SERVICE_API_RESOURCE_EXISTS=false}"
     },
-    "aiExistingProjectConnectionString": {
-      "value": "${AZURE_EXISTING_AIPROJECT_CONNECTION_STRING}"
+    "azureExistingAIProjectResourceId": {
+      "value": "${AZURE_EXISTING_AIPROJECT_RESOURCE_ID}"
     },
     "aiSearchIndexName": {
       "value": "${AZURE_AI_SEARCH_INDEX_NAME=index_sample}"

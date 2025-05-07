@@ -2,106 +2,173 @@
 @description('Primary location for all resources')
 param location string
 
-@description('The AI Hub resource name.')
-param hubName string
 @description('The AI Project resource name.')
-param projectName string
-@description('The Key Vault resource name.')
-param keyVaultName string
+param aiProjectName string
 @description('The Storage Account resource name.')
 param storageAccountName string
 @description('The AI Services resource name.')
 param aiServicesName string
-@description('The AI Services connection name.')
-param aiServicesConnectionName string
 @description('The AI Services model deployments.')
 param aiServiceModelDeployments array = []
 @description('The Log Analytics resource name.')
 param logAnalyticsName string = ''
 @description('The Application Insights resource name.')
 param applicationInsightsName string = ''
-@description('The Container Registry resource name.')
-param containerRegistryName string = ''
 @description('The Azure Search resource name.')
 param searchServiceName string = ''
 @description('The Azure Search connection name.')
 param searchConnectionName string = ''
 param tags object = {}
 
-module hubDependencies '../ai/hub-dependencies.bicep' = {
-  name: 'hubDependencies'
+module storageAccount '../storage/storage-account.bicep' = {
+  name: 'storageAccount'
   params: {
     location: location
     tags: tags
-    keyVaultName: keyVaultName
-    storageAccountName: storageAccountName
-    applicationInsightsName: applicationInsightsName
-    logAnalyticsName: logAnalyticsName
-    aiServicesName: aiServicesName
-    aiServiceModelDeployments: aiServiceModelDeployments
-    searchServiceName: searchServiceName
+    name: storageAccountName
+    containers: [
+      {
+        name: 'default'
+      }
+    ]
+    files: [
+      {
+        name: 'default'
+      }
+    ]
+    queues: [
+      {
+        name: 'default'
+      }
+    ]
+    tables: [
+      {
+        name: 'default'
+      }
+    ]
+    corsRules: [
+      {
+        allowedOrigins: [
+          'https://mlworkspace.azure.ai'
+          'https://ml.azure.com'
+          'https://*.ml.azure.com'
+          'https://ai.azure.com'
+          'https://*.ai.azure.com'
+          'https://mlworkspacecanary.azure.ai'
+          'https://mlworkspace.azureml-test.net'
+        ]
+        allowedMethods: [
+          'GET'
+          'HEAD'
+          'POST'
+          'PUT'
+          'DELETE'
+          'OPTIONS'
+          'PATCH'
+        ]
+        maxAgeInSeconds: 1800
+        exposedHeaders: [
+          '*'
+        ]
+        allowedHeaders: [
+          '*'
+        ]
+      }
+    ]
+    deleteRetentionPolicy: {
+      allowPermanentDelete: false
+      enabled: false
+    }
+    shareDeleteRetentionPolicy: {
+      enabled: true
+      days: 7
+    }
   }
 }
 
-module hub '../ai/hub.bicep' = {
-  name: 'hub'
+module logAnalytics '../monitor/loganalytics.bicep' =
+  if (!empty(logAnalyticsName)) {
+    name: 'logAnalytics'
+    params: {
+      location: location
+      tags: tags
+      name: logAnalyticsName
+    }
+  }
+
+module applicationInsights '../monitor/applicationinsights.bicep' =
+  if (!empty(applicationInsightsName) && !empty(logAnalyticsName)) {
+    name: 'applicationInsights'
+    params: {
+      location: location
+      tags: tags
+      name: applicationInsightsName
+      logAnalyticsWorkspaceId: !empty(logAnalyticsName) ? logAnalytics.outputs.id : ''
+    }
+  }
+
+
+module cognitiveServices '../ai/cognitiveservices.bicep' = {
+  name: 'cognitiveServices'
   params: {
     location: location
     tags: tags
-    name: hubName
-    displayName: hubName
-    keyVaultId: hubDependencies.outputs.keyVaultId
-    storageAccountId: hubDependencies.outputs.storageAccountId
-    applicationInsightsId: hubDependencies.outputs.applicationInsightsId
-    aiServicesName: hubDependencies.outputs.aiServicesName
-    aiServicesConnectionName: aiServicesConnectionName
-    aiSearchName: hubDependencies.outputs.searchServiceName
-    aiSearchConnectionName: searchConnectionName
+    aiServiceName: aiServicesName
+    aiProjectName: aiProjectName
+    kind: 'AIServices'
+    deployments: aiServiceModelDeployments
   }
 }
 
-module project '../ai/project.bicep' = {
-  name: 'project'
-  params: {
-    location: location
-    tags: tags
-    name: projectName
-    displayName: projectName
-    hubName: hub.outputs.name
-    keyVaultName: hubDependencies.outputs.keyVaultName
+resource searchConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' =
+  if (!empty(searchConnectionName)) {
+    name: searchConnectionName
+    properties: {
+      category: 'CognitiveSearch'
+      authType: 'ApiKey'
+      isSharedToAll: true
+      target: 'https://${search.name}.search.windows.net/'
+      credentials: {
+        key: !empty(search) ? search.listAdminKeys().primaryKey : ''
+      }
+    }
   }
-}
+
+  resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing =
+  if (!empty(searchServiceName)) {
+    name: searchServiceName
+  }
+
+
+module searchService '../search/search-services.bicep' =
+  if (!empty(searchServiceName)) {
+    name: 'searchService'
+    params: {
+      location: location
+      tags: tags
+      name: searchServiceName
+      semanticSearch: 'free'
+      authOptions: { aadOrApiKey: { aadAuthFailureMode: 'http401WithBearerChallenge'}}
+    }
+  }
+
 
 // Outputs
-// Resource Group
-output resourceGroupName string = resourceGroup().name
 
-// Hub
-output hubName string = hub.outputs.name
-output hubPrincipalId string = hub.outputs.principalId
+output storageAccountId string = storageAccount.outputs.id
+output storageAccountName string = storageAccount.outputs.name
 
-// Project
-output projectName string = project.outputs.name
-output projectPrincipalId string = project.outputs.principalId
+output applicationInsightsId string = !empty(applicationInsightsName) ? applicationInsights.outputs.id : ''
+output applicationInsightsName string = !empty(applicationInsightsName) ? applicationInsights.outputs.name : ''
+output logAnalyticsWorkspaceId string = !empty(logAnalyticsName) ? logAnalytics.outputs.id : ''
+output logAnalyticsWorkspaceName string = !empty(logAnalyticsName) ? logAnalytics.outputs.name : ''
 
-// Key Vault
-output keyVaultName string = hubDependencies.outputs.keyVaultName
-output keyVaultEndpoint string = hubDependencies.outputs.keyVaultEndpoint
+output aiServiceId string = cognitiveServices.outputs.id
+output aiServicesName string = cognitiveServices.outputs.name
+output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI Language Model Instance API']
 
-// Application Insights
-output applicationInsightsName string = hubDependencies.outputs.applicationInsightsName
-output logAnalyticsWorkspaceName string = hubDependencies.outputs.logAnalyticsWorkspaceName
+output searchServiceId string = !empty(searchServiceName) ? searchService.outputs.id : ''
+output searchServiceName string = !empty(searchServiceName) ? searchService.outputs.name : ''
+output searchServiceEndpoint string = !empty(searchServiceName) ? searchService.outputs.endpoint : ''
 
-// Storage Account
-output storageAccountName string = hubDependencies.outputs.storageAccountName
-
-// AI Services
-output aiServicesName string = hubDependencies.outputs.aiServicesName
-output aiServiceEndpoint string = hubDependencies.outputs.aiServiceEndpoint
-
-// Search
-output searchServiceName string = hubDependencies.outputs.searchServiceName
-output searchServiceEndpoint string = hubDependencies.outputs.searchServiceEndpoint
-
-//Discoveryurl
-output discoveryUrl string = project.outputs.discoveryUrl
+output projectResourceId string = cognitiveServices.outputs.projectResourceId

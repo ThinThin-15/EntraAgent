@@ -7,6 +7,8 @@ param keyVaultName string
 param storageAccountName string
 @description('Name of the AI Service')
 param aiServicesName string
+@description('Name of the AI Project')
+param aiProjectName string
 @description('Array of OpenAI model deployments')
 param aiServiceModelDeployments array = []
 @description('Name of the Log Analytics workspace')
@@ -15,15 +17,6 @@ param logAnalyticsName string = ''
 param applicationInsightsName string = ''
 @description('Name of the Azure Cognitive Search service')
 param searchServiceName string = ''
-
-module keyVault '../security/keyvault.bicep' = {
-  name: 'keyvault'
-  params: {
-    location: location
-    tags: tags
-    name: keyVaultName
-  }
-}
 
 module storageAccount '../storage/storage-account.bicep' = {
   name: 'storageAccount'
@@ -118,7 +111,8 @@ module cognitiveServices '../ai/cognitiveservices.bicep' = {
   params: {
     location: location
     tags: tags
-    name: aiServicesName
+    aiServiceName: aiServicesName
+    aiProjectName: aiProjectName
     kind: 'AIServices'
     deployments: aiServiceModelDeployments
   }
@@ -136,9 +130,6 @@ module searchService '../search/search-services.bicep' =
     }
   }
 
-output keyVaultId string = keyVault.outputs.id
-output keyVaultName string = keyVault.outputs.name
-output keyVaultEndpoint string = keyVault.outputs.endpoint
 
 output storageAccountId string = storageAccount.outputs.id
 output storageAccountName string = storageAccount.outputs.name
@@ -155,3 +146,5 @@ output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI La
 output searchServiceId string = !empty(searchServiceName) ? searchService.outputs.id : ''
 output searchServiceName string = !empty(searchServiceName) ? searchService.outputs.name : ''
 output searchServiceEndpoint string = !empty(searchServiceName) ? searchService.outputs.endpoint : ''
+
+output projectResourceId string = cognitiveServices.outputs.projectResourceId

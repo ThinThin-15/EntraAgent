@@ -29,12 +29,15 @@ logger = None
 async def lifespan(app: fastapi.FastAPI):
     agent = None
 
-    connection_string = os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") if os.environ.get("AZURE_EXISTING_AIPROJECT_CONNECTION_STRING") else os.environ.get("AZURE_AIPROJECT_CONNECTION_STRING")
+    ai_project_resource_id = os.environ.get("AZURE_EXISTING_AIPROJECT_RESOURCE_ID")
+    parts = ai_project_resource_id.split("/")    
+    proj_endpoint = f'https://{parts[8]}.services.ai.azure.com/api/projects/{parts[10]}'
     agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
     try:
         ai_project = AIProjectClient(
             credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
-            endpoint=connection_string,
+            endpoint=proj_endpoint,
+            api_version = "2025-05-01"            
         )
         logger.info("Created AIProjectClient")
 
@@ -67,9 +70,9 @@ async def lifespan(app: fastapi.FastAPI):
         if not agent:
             # Fallback to searching by name
             agent_name = os.environ["AZURE_AI_AGENT_NAME"]
-            agent_list = await ai_project.agents.list_agents()
-            if agent_list.data:
-                for agent_object in agent_list.data:
+            agent_list = ai_project.agents.list_agents()
+            if agent_list:
+                async for agent_object in agent_list:
                     if agent_object.name == agent_name:
                         agent = agent_object
                         logger.info(f"Found agent by name '{agent_name}', ID={agent_object.id}")

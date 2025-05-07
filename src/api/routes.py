@@ -20,10 +20,6 @@ from azure.ai.agents.models import (
     ThreadMessage,
     ThreadRun,
     AsyncAgentEventHandler,
-    OpenAIPageableListOfThreadMessage,
-    MessageTextContent,
-    MessageTextFileCitationAnnotation,
-    MessageTextUrlCitationAnnotation,
     RunStep
 )
 
@@ -218,10 +214,10 @@ async def history(
     # Create a new message from the user's input.
     try:
         content = []
-        response = await agent_client.messages.list(
+        response = agent_client.messages.list(
             thread_id=thread_id,
         )
-        for message in response.data:
+        async for message in response:
             formated_message = await get_message_and_annotations(agent_client, message)
             formated_message['role'] = message.role
             content.append(formated_message)

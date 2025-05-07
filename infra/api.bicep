@@ -4,7 +4,7 @@ param tags object = {}
 
 param identityName string
 param containerAppsEnvironmentName string
-param projectConnectionString string
+param azureExistingAIProjectResourceId string
 param agentDeploymentName string
 param searchConnectionName string
 param embeddingDeploymentName string
@@ -26,8 +26,8 @@ var env = [
     value: apiIdentity.properties.clientId
   }
   {
-    name: 'AZURE_EXISTING_AIPROJECT_CONNECTION_STRING'
-    value: projectConnectionString
+    name: 'AZURE_EXISTING_AIPROJECT_RESOURCE_ID'
+    value: azureExistingAIProjectResourceId
   }
   {
     name: 'AZURE_AI_AGENT_NAME'
@@ -81,6 +81,7 @@ module app 'core/host/container-app-upsert.bicep' = {
     projectName: projectName
   }
 }
+
 
 output SERVICE_API_IDENTITY_PRINCIPAL_ID string = apiIdentity.properties.principalId
 output SERVICE_API_NAME string = app.outputs.name

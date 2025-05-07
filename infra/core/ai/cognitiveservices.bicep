@@ -1,13 +1,13 @@
 metadata description = 'Creates an Azure Cognitive Services instance.'
-param name string
+param aiServiceName string
+param aiProjectName string
 param location string = resourceGroup().location
 param tags object = {}
 @description('The custom subdomain name used to access the API. Defaults to the value of the name parameter.')
-param customSubDomainName string = name
+param customSubDomainName string = aiServiceName
 param disableLocalAuth bool = false
 param deployments array = []
 param kind string = 'OpenAI'
-//param kind string = 'AIServices'
 
 @allowed([ 'Enabled', 'Disabled' ])
 param publicNetworkAccess string = 'Enabled'
@@ -23,22 +23,40 @@ param networkAcls object = empty(allowedIpRules) ? {
   defaultAction: 'Deny'
 }
 
-resource account 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: name
+resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
+  name: aiServiceName
   location: location
-  tags: tags
-  kind: kind
-  properties: {
-    customSubDomainName: customSubDomainName
-    publicNetworkAccess: publicNetworkAccess
-    networkAcls: networkAcls
-    disableLocalAuth: disableLocalAuth
-  }
   sku: sku
+  kind: 'AIServices'
+  identity: {
+    type: 'SystemAssigned'
+  }
+  tags: tags
+  properties: {
+    allowProjectManagement: true
+    customSubDomainName: customSubDomainName
+    networkAcls: networkAcls
+    publicNetworkAccess: publicNetworkAccess
+    disableLocalAuth: disableLocalAuth 
+  }
+}
+
+resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
+  parent: account
+  name: aiProjectName
+  location: location
+  tags: tags  
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    description: 'AI Project'
+    displayName: 'AI Project'
+  }
 }
 
 @batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [for deployment in deployments: {
+resource aiServicesDeployments 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = [for deployment in deployments: {
   parent: account
   name: deployment.name
   properties: {
@@ -51,7 +69,10 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
   }
 }]
 
+
+
 output endpoint string = account.properties.endpoint
 output endpoints object = account.properties.endpoints
 output id string = account.id
 output name string = account.name
+output projectResourceId string = aiProject.id
