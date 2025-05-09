@@ -34,17 +34,11 @@ param azureExistingAIProjectResourceId string = ''
 @description('The Azure resource group where new resources will be deployed')
 param resourceGroupName string = ''
 @description('The Azure AI Foundry Hub resource name. If ommited will be generated')
-param aiHubName string = ''
-@description('The Azure AI Foundry project name. If ommited will be generated')
 param aiProjectName string = ''
 @description('The application insights resource name. If ommited will be generated')
 param applicationInsightsName string = ''
 @description('The AI Services resource name. If ommited will be generated')
 param aiServicesName string = ''
-@description('The AI Services connection name. If ommited will use a default value')
-param aiServicesConnectionName string = ''
-@description('The Azure Key Vault resource name. If ommited will be generated')
-param keyVaultName string = ''
 @description('The Azure Search resource name. If ommited will be generated')
 param searchServiceName string = ''
 @description('The Azure Search connection name. If ommited will use a default value')
@@ -113,6 +107,12 @@ param embedDeploymentCapacity int = 30
 param useApplicationInsights bool = true
 @description('Do we want to use the Azure AI Search')
 param useSearchService bool = false
+
+@description('Do we want to use the Azure Monitor tracing')
+param enableAzureMonitorTracing bool = false
+
+@description('Do we want to use the Azure Monitor tracing for GenAI content recording')
+param azureTracingGenAIContentRecordingEnabled bool = false
 
 @description('Random seed to be used during generation of new resources suffixes.')
 param seed string = newGuid()
@@ -284,6 +284,8 @@ module api 'api.bicep' = {
     agentName: agentName
     agentID: agentID
     projectName: aiProjectName
+    enableAzureMonitorTracing: enableAzureMonitorTracing
+    azureTracingGenAIContentRecordingEnabled: azureTracingGenAIContentRecordingEnabled
   }
 }
 

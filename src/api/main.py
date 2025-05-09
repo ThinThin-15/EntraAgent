@@ -20,8 +20,6 @@ from dotenv import load_dotenv
 
 from logging_config import configure_logging
 
-
-
 enable_trace = False
 logger = None
 
