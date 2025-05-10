@@ -18,6 +18,7 @@ param applicationInsightsName string = ''
 param searchServiceName string = ''
 @description('The Azure Search connection name.')
 param searchConnectionName string = ''
+param appInsightConnectionName string
 param tags object = {}
 
 module storageAccount '../storage/storage-account.bicep' = {
@@ -115,8 +116,10 @@ module cognitiveServices '../ai/cognitiveservices.bicep' = {
     tags: tags
     aiServiceName: aiServicesName
     aiProjectName: aiProjectName
-    kind: 'AIServices'
     deployments: aiServiceModelDeployments
+    appInsightsId: applicationInsights.outputs.id
+    appInsightConnectionName: appInsightConnectionName
+    appInsightConnectionString: applicationInsights.outputs.connectionString
   }
 }
 

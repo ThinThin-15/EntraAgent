@@ -7,7 +7,9 @@ param tags object = {}
 param customSubDomainName string = aiServiceName
 param disableLocalAuth bool = false
 param deployments array = []
-param kind string = 'OpenAI'
+param appInsightsId string
+param appInsightConnectionString string
+param appInsightConnectionName string
 
 @allowed([ 'Enabled', 'Disabled' ])
 param publicNetworkAccess string = 'Enabled'
@@ -38,6 +40,25 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
     networkAcls: networkAcls
     publicNetworkAccess: publicNetworkAccess
     disableLocalAuth: disableLocalAuth 
+  }
+}
+
+// Creates the Azure Foundry connection to your Azure App Insights resource
+resource appInsightConnection 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = {
+  name: appInsightConnectionName
+  parent: account
+  properties: {
+    category: 'AppInsights'
+    target: appInsightsId
+    authType: 'ApiKey'
+    isSharedToAll: true
+    credentials: {
+      key: appInsightConnectionString
+    }
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: appInsightsId
+    }
   }
 }
 
