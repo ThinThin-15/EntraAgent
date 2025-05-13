@@ -38,7 +38,6 @@ async def lifespan(app: fastapi.FastAPI):
             application_insights_connection_string = ""
             try:
                 application_insights_connection_string = await ai_project.telemetry.get_connection_string()
-                logger.error("Application Insights was enabled for this project.")
             except Exception as e:
                 e_string = str(e)
                 logger.error("Failed to get Application Insights connection string, error: %s", e_string)
@@ -47,15 +46,14 @@ async def lifespan(app: fastapi.FastAPI):
                 logger.error("Enable it via the 'Tracing' tab in your AI Foundry project page.")
                 exit()
             else:
+                logger.info("Application is enabled for this project.")
                 app.state.application_insights_connection_string = application_insights_connection_string
 
                 from azure.ai.agents.telemetry import enable_telemetry
                 enable_telemetry()
-                
+
                 from azure.monitor.opentelemetry import configure_azure_monitor
                 configure_azure_monitor(connection_string=application_insights_connection_string)
-
-
 
         if agent_id:
             try: 
