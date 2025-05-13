@@ -1,5 +1,11 @@
 import { ReactNode, useState, useMemo, useEffect } from "react";
-import { Body1, Button, Caption1, Title2 } from "@fluentui/react-components";
+import {
+  Body1,
+  Button,
+  Caption1,
+  Spinner,
+  Title2,
+} from "@fluentui/react-components";
 import { ChatRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
 
 import { AgentIcon } from "./AgentIcon";
@@ -20,28 +26,30 @@ interface IAgent {
 interface IAgentPreviewProps {
   resourceId: string;
   agentDetails: IAgent;
-
-  
 }
 
 export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const [messageList, setMessageList] = useState<IChatItem[]>([]);
   const [isResponding, setIsResponding] = useState(false);
-
+  const [isLoadingChatHistory, setIsLoadingChatHistory] = useState(true);
 
   const loadChatHistory = async () => {
     try {
       const response = await fetch("/chat/history", {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        credentials: 'include'
+        credentials: "include",
       });
 
       if (response.ok) {
-        const json_response: Array<{ role: string; content: string; annotations?: any[] }> = await response.json();
+        const json_response: Array<{
+          role: string;
+          content: string;
+          annotations?: any[];
+        }> = await response.json();
 
         // It's generally better to build the new list and set state once
         const historyMessages: IChatItem[] = [];
@@ -50,7 +58,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
         for (const entry of reversedResponse) {
           if (entry.role === "user") {
             historyMessages.push({
-              id: ``, 
+              id: ``,
               content: entry.content,
               role: "user",
               more: { time: new Date().toISOString() }, // Or use timestamp from history if available
@@ -65,22 +73,31 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
             });
           }
         }
-        setMessageList(prev => [...historyMessages, ...prev]); // Prepend history
-
+        setMessageList((prev) => [...historyMessages, ...prev]); // Prepend history
       } else {
         const errorChatItem = createAssistantMessageDiv(); // This will add an empty message first
-        appendAssistantMessage(errorChatItem, "Error occurs while loading chat history!", false);
+        appendAssistantMessage(
+          errorChatItem,
+          "Error occurs while loading chat history!",
+          false
+        );
       }
+      setIsLoadingChatHistory(false);
     } catch (error) {
       console.error("Failed to load chat history:", error);
       const errorChatItem = createAssistantMessageDiv();
-      appendAssistantMessage(errorChatItem, "Error occurs while loading chat history!", false);
+      appendAssistantMessage(
+        errorChatItem,
+        "Error occurs while loading chat history!",
+        false
+      );
+      setIsLoadingChatHistory(false);
     }
   };
 
   useEffect(() => {
     loadChatHistory();
-    }, []);
+  }, []);
 
   const handleSettingsPanelOpenChange = (isOpen: boolean) => {
     setIsSettingsPanelOpen(isOpen);
@@ -91,17 +108,17 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
     deleteAllCookies();
   };
 
-    const deleteAllCookies = (): void => {
-      document.cookie.split(';').forEach((cookieStr: string) => {
-        const trimmedCookieStr = cookieStr.trim();
-        const eqPos = trimmedCookieStr.indexOf('=');
-        const name = eqPos > -1 ? trimmedCookieStr.substring(0, eqPos) : trimmedCookieStr;
-        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
-      });
-    };
+  const deleteAllCookies = (): void => {
+    document.cookie.split(";").forEach((cookieStr: string) => {
+      const trimmedCookieStr = cookieStr.trim();
+      const eqPos = trimmedCookieStr.indexOf("=");
+      const name =
+        eqPos > -1 ? trimmedCookieStr.substring(0, eqPos) : trimmedCookieStr;
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    });
+  };
 
   const onSend = async (message: string) => {
-
     const userMessage: IChatItem = {
       id: `user-${Date.now()}`,
       content: message,
@@ -115,209 +132,222 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       const postData = { message: message };
       // IMPORTANT: Add credentials: 'include' if server cookies are critical
       // and if your backend is on the same domain or properly configured for cross-site cookies.
-      const response = await fetch('/chat', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(postData),
-          credentials: 'include' // <--- allow cookies to be included
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(postData),
+        credentials: "include", // <--- allow cookies to be included
       });
 
       // Log out the response status in case there’s an error
-      console.log("[ChatClient] Response status:", response.status, response.statusText);
+      console.log(
+        "[ChatClient] Response status:",
+        response.status,
+        response.statusText
+      );
 
       // If server returned e.g. 400 or 500, that’s not an exception, but we can check manually:
       if (!response.ok) {
-          console.error("[ChatClient] Response not OK:", response.status, response.statusText);
-          return;
+        console.error(
+          "[ChatClient] Response not OK:",
+          response.status,
+          response.statusText
+        );
+        return;
       }
 
       if (!response.body) {
-          throw new Error('ReadableStream not supported or response.body is null');
+        throw new Error(
+          "ReadableStream not supported or response.body is null"
+        );
       }
 
       console.log("[ChatClient] Starting to handle streaming response...");
       handleMessages(response.body);
-
     } catch (error: any) {
-
-        setIsResponding(false);
-        if (error.name === 'AbortError') {
-            console.log('[ChatClient] Fetch request aborted by user.');
-        } else {
-            console.error('[ChatClient] Fetch failed:', error);
-        }
+      setIsResponding(false);
+      if (error.name === "AbortError") {
+        console.log("[ChatClient] Fetch request aborted by user.");
+      } else {
+        console.error("[ChatClient] Fetch failed:", error);
+      }
     } finally {
-        // Reset the controller once the request is finished or cancelled
-        //TODO
-        // this.abortController = null;
+      // Reset the controller once the request is finished or cancelled
+      //TODO
+      // this.abortController = null;
     }
-
-
   };
 
-  const handleMessages = (stream: ReadableStream<Uint8Array<ArrayBufferLike>>) => {
+  const handleMessages = (
+    stream: ReadableStream<Uint8Array<ArrayBufferLike>>
+  ) => {
     let chatItem: IChatItem | null = null;
-    let accumulatedContent = '';
+    let accumulatedContent = "";
     let isStreaming = true;
-    let buffer = '';
+    let buffer = "";
 
     // Create a reader for the SSE stream
     const reader = stream.getReader();
     const decoder = new TextDecoder();
 
     const readStream = async () => {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                console.log("[ChatClient] SSE stream ended by server.");
-                break;
-            }
-
-            // Convert the incoming Uint8Array to text
-            const textChunk = decoder.decode(value, { stream: true });
-            console.log("[ChatClient] Raw chunk from stream:", textChunk);
-
-            buffer += textChunk;
-            let boundary = buffer.indexOf('\n');
-
-            // We process line-by-line.
-            while (boundary !== -1) {
-                const chunk = buffer.slice(0, boundary).trim();
-                buffer = buffer.slice(boundary + 1);
-
-                console.log("[ChatClient] SSE line:", chunk); // log each line we extract
-
-                if (chunk.startsWith('data: ')) {
-                    // Attempt to parse JSON
-                    const jsonStr = chunk.slice(6);
-                    let data;
-                    try {
-                        data = JSON.parse(jsonStr);
-                    } catch (err) {
-                        console.error("[ChatClient] Failed to parse JSON:", jsonStr, err);
-                        boundary = buffer.indexOf('\n');
-                        continue;
-                    }
-
-                    console.log("[ChatClient] Parsed SSE event:", data);
-
-                    if (data.error) {
-                        if (!chatItem) {
-                            chatItem = createAssistantMessageDiv();
-                            console.log("[ChatClient] Created new messageDiv for assistant.");
-                        }
-
-                        setIsResponding(false);
-                        appendAssistantMessage(
-                            chatItem,
-                            data.error.message || "An error occurred.",
-                            false
-                        );           
-                        return;                 
-                    }
-
-                    // Check the data type to decide how to update the UI
-                    if (data.type === "stream_end") {
-                        // End of the stream
-                        console.log("[ChatClient] Stream end marker received.");
-                        setIsResponding(false);
-                        break;
-                    } else if (data.type === "thread_run") {
-                        // Log the run status info
-                        console.log("[ChatClient] Run status info:", data.content);
-                    } else {
-                        // If we have no messageDiv yet, create one
-                        if (!chatItem) {
-                          // TODO
-                            chatItem = createAssistantMessageDiv();
-                            console.log("[ChatClient] Created new messageDiv for assistant.");
-                        }
-                        
-                        if (data.type === "completed_message") {
-                            clearAssistantMessage(chatItem);
-                            accumulatedContent = data.content;
-                            isStreaming = false;
-                            console.log("[ChatClient] Received completed message:", accumulatedContent);
-
-                            // TODO: Hide spinner
-                            // document.getElementById("generating-message").style.display = "none";
-                            setIsResponding(false);
-                        } else {
-                            accumulatedContent += data.content;
-                            console.log("[ChatClient] Received streaming chunk:", data.content);
-                        }
-
-                        // Update the UI with the accumulated content
-                        appendAssistantMessage(
-                            chatItem,
-                            accumulatedContent,
-                            isStreaming,
-                        );
-                    }
-                }
-
-                boundary = buffer.indexOf('\n');
-            }
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          console.log("[ChatClient] SSE stream ended by server.");
+          break;
         }
+
+        // Convert the incoming Uint8Array to text
+        const textChunk = decoder.decode(value, { stream: true });
+        console.log("[ChatClient] Raw chunk from stream:", textChunk);
+
+        buffer += textChunk;
+        let boundary = buffer.indexOf("\n");
+
+        // We process line-by-line.
+        while (boundary !== -1) {
+          const chunk = buffer.slice(0, boundary).trim();
+          buffer = buffer.slice(boundary + 1);
+
+          console.log("[ChatClient] SSE line:", chunk); // log each line we extract
+
+          if (chunk.startsWith("data: ")) {
+            // Attempt to parse JSON
+            const jsonStr = chunk.slice(6);
+            let data;
+            try {
+              data = JSON.parse(jsonStr);
+            } catch (err) {
+              console.error("[ChatClient] Failed to parse JSON:", jsonStr, err);
+              boundary = buffer.indexOf("\n");
+              continue;
+            }
+
+            console.log("[ChatClient] Parsed SSE event:", data);
+
+            if (data.error) {
+              if (!chatItem) {
+                chatItem = createAssistantMessageDiv();
+                console.log(
+                  "[ChatClient] Created new messageDiv for assistant."
+                );
+              }
+
+              setIsResponding(false);
+              appendAssistantMessage(
+                chatItem,
+                data.error.message || "An error occurred.",
+                false
+              );
+              return;
+            }
+
+            // Check the data type to decide how to update the UI
+            if (data.type === "stream_end") {
+              // End of the stream
+              console.log("[ChatClient] Stream end marker received.");
+              setIsResponding(false);
+              break;
+            } else if (data.type === "thread_run") {
+              // Log the run status info
+              console.log("[ChatClient] Run status info:", data.content);
+            } else {
+              // If we have no messageDiv yet, create one
+              if (!chatItem) {
+                // TODO
+                chatItem = createAssistantMessageDiv();
+                console.log(
+                  "[ChatClient] Created new messageDiv for assistant."
+                );
+              }
+
+              if (data.type === "completed_message") {
+                clearAssistantMessage(chatItem);
+                accumulatedContent = data.content;
+                isStreaming = false;
+                console.log(
+                  "[ChatClient] Received completed message:",
+                  accumulatedContent
+                );
+
+                // TODO: Hide spinner
+                // document.getElementById("generating-message").style.display = "none";
+                setIsResponding(false);
+              } else {
+                accumulatedContent += data.content;
+                console.log(
+                  "[ChatClient] Received streaming chunk:",
+                  data.content
+                );
+              }
+
+              // Update the UI with the accumulated content
+              appendAssistantMessage(chatItem, accumulatedContent, isStreaming);
+            }
+          }
+
+          boundary = buffer.indexOf("\n");
+        }
+      }
     };
 
     // Catch errors from the stream reading process
-    readStream().catch(error => {
-        console.error('[ChatClient] Stream reading failed:', error);
+    readStream().catch((error) => {
+      console.error("[ChatClient] Stream reading failed:", error);
     });
-}
+  };
 
-const createAssistantMessageDiv: () => IChatItem = () => {
-  var item = { id: "unknown", content: "", isAnswer: true, };
-  setMessageList((prev) => [...prev, item]);  
-  return item;
-};
+  const createAssistantMessageDiv: () => IChatItem = () => {
+    var item = { id: "unknown", content: "", isAnswer: true };
+    setMessageList((prev) => [...prev, item]);
+    return item;
+  };
 
-const appendAssistantMessage = (chatItem: IChatItem, accumulatedContent: string, isStreaming: boolean,) => {
-
-
-  try {
+  const appendAssistantMessage = (
+    chatItem: IChatItem,
+    accumulatedContent: string,
+    isStreaming: boolean
+  ) => {
+    try {
       // Preprocess content to convert citations to links using the updated annotation data
       const preprocessedContent = accumulatedContent;
       // Convert the accumulated content to HTML using markdown-it
       let htmlContent = preprocessedContent;
       if (!chatItem) {
-          throw new Error("Message content div not found in the template.");
+        throw new Error("Message content div not found in the template.");
       }
 
       // Set the innerHTML of the message text div to the HTML content
       chatItem.content = htmlContent;
       setMessageList((prev) => {
-        const before = prev;        
+        const before = prev;
         console.log("[ChatClient] Message list before update:", before);
-        const after =  [...prev.slice(0, -1), {...chatItem}]; // Update the last message in the list
+        const after = [...prev.slice(0, -1), { ...chatItem }]; // Update the last message in the list
         console.log("[ChatClient] Message list after update:", after);
         return after;
-      });  
-      
-      
+      });
+
       // Use requestAnimationFrame to ensure the DOM has updated before scrolling
       // Only scroll if stop streaming
       if (!isStreaming) {
-          requestAnimationFrame(() => {
-
-              // TODO
-              // this.scrollToBottom();
-          });
+        requestAnimationFrame(() => {
+          // TODO
+          // this.scrollToBottom();
+        });
       }
-  } catch (error) {
+    } catch (error) {
       console.error("Error in appendAssistantMessage:", error);
-  }
-}
+    }
+  };
 
-
-const clearAssistantMessage = (chatItem: IChatItem) => {
-  if (chatItem) {
+  const clearAssistantMessage = (chatItem: IChatItem) => {
+    if (chatItem) {
       chatItem.content = "";
-  }
-}  
+    }
+  };
   const menuItems = [
     {
       key: "settings",
@@ -407,24 +437,30 @@ const clearAssistantMessage = (chatItem: IChatItem) => {
         </div>
       </div>
       <div className={styles.content}>
-        {messageList.length === 0 && (
-          <div className={styles.emptyChatContainer}>
-            <AgentIcon
-              alt=""
-              iconClassName={styles.emptyStateAgentIcon}
-              iconName={agentDetails.logo}
+        {isLoadingChatHistory ? (
+          <Spinner label={"Loading chat history..."} />
+        ) : (
+          <>
+            {messageList.length === 0 && (
+              <div className={styles.emptyChatContainer}>
+                <AgentIcon
+                  alt=""
+                  iconClassName={styles.emptyStateAgentIcon}
+                  iconName={agentDetails.logo}
+                />
+                <Caption1 className={styles.agentName}>
+                  {agentDetails.name}
+                </Caption1>
+                <Title2>How can I help you today?</Title2>
+              </div>
+            )}
+            <AgentPreviewChatBot
+              agentName={agentDetails.name}
+              agentLogo={agentDetails.logo}
+              chatContext={chatContext}
             />
-            <Caption1 className={styles.agentName}>
-              {agentDetails.name}
-            </Caption1>
-            <Title2>How can I help you today?</Title2>
-          </div>
+          </>
         )}
-        <AgentPreviewChatBot
-          agentName={agentDetails.name}
-          agentLogo={agentDetails.logo}
-          chatContext={chatContext}
-        />
       </div>
 
       {/* Settings Panel */}
