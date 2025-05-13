@@ -88,7 +88,17 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
 
   const newThread = () => {
     setMessageList([]);
+    deleteAllCookies();
   };
+
+    const deleteAllCookies = (): void => {
+      document.cookie.split(';').forEach((cookieStr: string) => {
+        const trimmedCookieStr = cookieStr.trim();
+        const eqPos = trimmedCookieStr.indexOf('=');
+        const name = eqPos > -1 ? trimmedCookieStr.substring(0, eqPos) : trimmedCookieStr;
+        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      });
+    };
 
   const onSend = async (message: string) => {
 
