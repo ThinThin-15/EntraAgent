@@ -12,6 +12,9 @@ from fastapi import Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from opentelemetry import trace
+tracer = trace.get_tracer(__name__)
+
 from azure.ai.projects.models import (
    AgentEvaluationRequest,
    AgentEvaluationSamplingConfiguration,
@@ -288,61 +291,62 @@ async def chat(
     agent_client : AgentsClient = Depends(get_agent_client),
     agent : Agent = Depends(get_agent),
 ):
-    # Retrieve the thread ID from the cookies (if available).
-    thread_id = request.cookies.get('thread_id')
-    agent_id = request.cookies.get('agent_id')
+    with tracer.start_as_current_span("chat_request"):
+        # Retrieve the thread ID from the cookies (if available).
+        thread_id = request.cookies.get('thread_id')
+        agent_id = request.cookies.get('agent_id')
 
-    # Attempt to get an existing thread. If not found, create a new one.
-    try:
-        if thread_id and agent_id == agent.id:
-            logger.info(f"Retrieving thread with ID {thread_id}")
-            thread = await agent_client.threads.get(thread_id)
-        else:
-            logger.info("Creating a new thread")
-            thread = await agent_client.threads.create()
-    except Exception as e:
-        logger.error(f"Error handling thread: {e}")
-        raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
+        # Attempt to get an existing thread. If not found, create a new one.
+        try:
+            if thread_id and agent_id == agent.id:
+                logger.info(f"Retrieving thread with ID {thread_id}")
+                thread = await agent_client.threads.get(thread_id)
+            else:
+                logger.info("Creating a new thread")
+                thread = await agent_client.threads.create()
+        except Exception as e:
+            logger.error(f"Error handling thread: {e}")
+            raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
-    thread_id = thread.id
-    agent_id = agent.id
+        thread_id = thread.id
+        agent_id = agent.id
 
-    # Parse the JSON from the request.
-    try:
-        user_message = await request.json()
-    except Exception as e:
-        logger.error(f"Invalid JSON in request: {e}")
-        raise HTTPException(status_code=400, detail=f"Invalid JSON in request: {e}")
+        # Parse the JSON from the request.
+        try:
+            user_message = await request.json()
+        except Exception as e:
+            logger.error(f"Invalid JSON in request: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON in request: {e}")
 
-    logger.info(f"user_message: {user_message}")
+        logger.info(f"user_message: {user_message}")
 
-    # Create a new message from the user's input.
-    try:
-        message = await agent_client.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message.get('message', '')
-        )
-        logger.info(f"Created message, message ID: {message.id}")
-    except Exception as e:
-        logger.error(f"Error creating message: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating message: {e}")
+        # Create a new message from the user's input.
+        try:
+            message = await agent_client.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=user_message.get('message', '')
+            )
+            logger.info(f"Created message, message ID: {message.id}")
+        except Exception as e:
+            logger.error(f"Error creating message: {e}")
+            raise HTTPException(status_code=500, detail=f"Error creating message: {e}")
 
-    # Set the Server-Sent Events (SSE) response headers.
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "Content-Type": "text/event-stream"
-    }
-    logger.info(f"Starting streaming response for thread ID {thread_id}")
+        # Set the Server-Sent Events (SSE) response headers.
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream"
+        }
+        logger.info(f"Starting streaming response for thread ID {thread_id}")
 
-    # Create the streaming response using the generator.
-    response = StreamingResponse(get_result(request, thread_id, agent_id, agent_client), headers=headers)
+        # Create the streaming response using the generator.
+        response = StreamingResponse(get_result(request, thread_id, agent_id, agent_client), headers=headers)
 
-    # Update cookies to persist the thread and agent IDs.
-    response.set_cookie("thread_id", thread_id)
-    response.set_cookie("agent_id", agent_id)
-    return response
+        # Update cookies to persist the thread and agent IDs.
+        response.set_cookie("thread_id", thread_id)
+        response.set_cookie("agent_id", agent_id)
+        return response
 
 
 @router.get("/fetch-document")
