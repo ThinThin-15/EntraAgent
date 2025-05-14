@@ -55,6 +55,8 @@ def run_evaluation():
                 
     if not agent_id:
         raise ValueError("Agent ID not found. Please provide a valid agent ID or name.") 
+    
+    agent = ai_project.agents.get_agent(agent_id)
 
     # Read data input file 
     with open(eval_queries_path, "r", encoding="utf-8") as f:
