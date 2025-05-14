@@ -1,20 +1,15 @@
 from azure.ai.projects import AIProjectClient
 from azure.ai.agents.models import Agent, ThreadRun, RunStatus, MessageRole
 from azure.ai.projects.models import ConnectionType
-# from azure.ai.projects.models import (
-#     AgentEvaluationRequest,
-#     InputDataset,
-#     EvaluatorIds,
-#     EvaluatorConfiguration,
-#     AgentEvaluationSamplingConfiguration,
-#     AgentEvaluationRedactionConfiguration,
-# )
 from azure.ai.agents.aio import AgentsClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.evaluation import (
-    #AIAgentConverter, 
+    AIAgentConverter, 
     evaluate, FluencyEvaluator, ToolCallAccuracyEvaluator, IntentResolutionEvaluator, TaskAdherenceEvaluator,
-    QAEvaluator, ContentSafetyEvaluator)
+    CodeVulnerabilityEvaluator, ContentSafetyEvaluator, IndirectAttackEvaluator)
+from urllib.parse import urlparse
+
+#from azure.ai.evaluation import ToolCallAccuracyEvaluator, IntentResolutionEvaluator, TaskAdherenceEvaluator, CodeVulnerabilityEvaluator, ContentSafetyEvaluator, IndirectAttackEvaluator
 
 import os
 import time
@@ -39,32 +34,25 @@ def run_evaluation():
     ai_project_resource_id = os.environ.get("AZURE_EXISTING_AIPROJECT_RESOURCE_ID")
     deployment_name = os.getenv("AZURE_AI_AGENT_DEPLOYMENT_NAME")
     parts = ai_project_resource_id.split("/")    
-    proj_endpoint = f'https://{parts[8]}.services.ai.azure.com/api/projects/{parts[10]}'
-    agent_id = "asst_2U73baIGjgCE6E7ec52JjcSU"#os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
+    project_endpoint = f'https://{parts[8]}.services.ai.azure.com/api/projects/{parts[10]}'
+    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
 
     # Initialize the AIProjectClient and related entities
     ai_project = AIProjectClient(
         credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
-        endpoint=proj_endpoint,
-        api_version = "2025-05-01"            
+        endpoint=project_endpoint,
+        api_version = "2025-05-01"
     )
-    # connections = ai_project.connections.list(
-    #     connection_type=ConnectionType.AZURE_OPEN_AI, include_credentials=True
-    # )
-    # default_connection = connections[0]
-    # model_config = default_connection.to_evaluator_model_config(
-    #     deployment_name=deployment_name,
-    #     api_version="",
-    #     include_credentials=True,
-    # )
+    parsed_url = urlparse(project_endpoint)
     model_config = {
         "azure_deployment": deployment_name,
-        "azure_endpoint": "https://aoai-qyrftgva6obps.cognitiveservices.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
-        "api_key": "<key>"
+        "azure_endpoint": f"{parsed_url.scheme}://{parsed_url.netloc}",
+        "api_version": "",
     }
+
     agent = ai_project.agents.get_agent(agent_id)
     agent_client = get_agent_client(ai_project.agents)
-    #thread_data_converter = AIAgentConverter(ai_project)
+    thread_data_converter = AIAgentConverter(ai_project)
 
     # Read data input file 
     with open(eval_queries_path, "r", encoding="utf-8") as f:
@@ -102,38 +90,12 @@ def run_evaluation():
                 "ground-truth": row.get("ground-truth", '')
             }
 
-            # agent_evaluation_request = AgentEvaluationRequest(
-            #     run_id=run.id,
-            #     thread_id=thread.id,
-            #     evaluators={
-            #         "violence": EvaluatorConfiguration(
-            #             id=EvaluatorIds.VIOLENCE,
-            #         )
-            #     }
-            # )
-
-            # Get the last message from the assistant
-            messages = agent_client.messages.list(
-                thread.id, run_id=run.id
-            )
-            for msg in messages:
-                if msg.text_messages:
-                    last_text = msg.text_messages[-1]
-                    print(f"{msg.role}: {last_text.text.value}")
-            
             # Add thread data + operational metrics to the evaluation input
-            #evaluation_data = thread_data_converter.prepare_evaluation_data(thread_ids=thread.id)
+            evaluation_data = thread_data_converter.prepare_evaluation_data(thread_ids=thread.id)
 
-            if (last_text and last_text.text and last_text.text.value):
-                eval_item = {
-                    "query": row.get("query"),
-                    "ground-truth": row.get("ground-truth", ''),
-                    "response": last_text.text.value,
-                    "metrics": metrics,
-                }
-                # eval_item = evaluation_data[0]
-                # eval_item["metrics"] = metrics
-                f.write(json.dumps(eval_item) + "\n")   
+            eval_item = evaluation_data[0]
+            eval_item["metrics"] = metrics
+            f.write(json.dumps(eval_item) + "\n")   
         
 
     # Now, run a sample set of evaluators using the evaluation input
@@ -145,15 +107,16 @@ def run_evaluation():
     #qa = QAEvaluator(model_config=model_config)
     #content_safety = ContentSafetyEvaluator(model_config=model_config)
     results = evaluate(
+        evaluation_name="evaluation-test",
         data=eval_input_path,
         evaluators={
-            #"tool_call_accuracy": tool_call_accuracy,
+            "tool_call_accuracy": tool_call_accuracy,
             "intent_resolution": intent_resolution,
             "task_adherence": task_adherence,
             "operational_metrics": OperationalMetricsEvaluator(),
         },
         output_path=eval_output_path, # raw evaluation results
-        #azure_ai_project=ai_project.scope, # needed only if you want results uploaded to AI Foundry
+        azure_ai_project=project_endpoint, # needed only if you want results uploaded to AI Foundry
     )
 
     # Print the evaluation results
