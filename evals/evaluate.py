@@ -1,24 +1,17 @@
-from azure.ai.projects import AIProjectClient
-from azure.ai.agents.models import Agent, ThreadRun, RunStatus, MessageRole
-from azure.ai.projects.models import ConnectionType
-from azure.ai.agents.aio import AgentsClient
-from azure.identity import DefaultAzureCredential
-from azure.ai.evaluation import (
-    AIAgentConverter, 
-    evaluate, FluencyEvaluator, ToolCallAccuracyEvaluator, IntentResolutionEvaluator, TaskAdherenceEvaluator,
-    CodeVulnerabilityEvaluator, ContentSafetyEvaluator, IndirectAttackEvaluator)
-from urllib.parse import urlparse
-
-#from azure.ai.evaluation import ToolCallAccuracyEvaluator, IntentResolutionEvaluator, TaskAdherenceEvaluator, CodeVulnerabilityEvaluator, ContentSafetyEvaluator, IndirectAttackEvaluator
-
 import os
 import time
 import json
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
-def get_agent_client(agent_client) -> AgentsClient:
-    return agent_client
+from azure.ai.agents.models import RunStatus, MessageRole
+from azure.ai.projects import AIProjectClient
+from azure.ai.evaluation import (
+    AIAgentConverter,
+    evaluate, ToolCallAccuracyEvaluator, IntentResolutionEvaluator, TaskAdherenceEvaluator, 
+    CodeVulnerabilityEvaluator, ContentSafetyEvaluator, IndirectAttackEvaluator)
+from azure.identity import DefaultAzureCredential
 
 def run_evaluation():
     """Demonstrate how to evaluate an AI agent using the Azure AI Project SDK"""
@@ -32,27 +25,36 @@ def run_evaluation():
 
     # Get AI project parameters from environment variables
     ai_project_resource_id = os.environ.get("AZURE_EXISTING_AIPROJECT_RESOURCE_ID")
-    deployment_name = os.getenv("AZURE_AI_AGENT_DEPLOYMENT_NAME")
     parts = ai_project_resource_id.split("/")    
     project_endpoint = f'https://{parts[8]}.services.ai.azure.com/api/projects/{parts[10]}'
+    model_endpoint = f'https://{parts[8]}.services.ai.azure.com'
+    deployment_name = os.getenv("AZURE_AI_AGENT_DEPLOYMENT_NAME")
+    agent_name = os.environ.get("AZURE_AI_AGENT_NAME")
     agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
 
     # Initialize the AIProjectClient and related entities
+    credential = DefaultAzureCredential()
     ai_project = AIProjectClient(
-        credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
+        credential=credential,
         endpoint=project_endpoint,
         api_version = "2025-05-01"
     )
-    parsed_url = urlparse(project_endpoint)
     model_config = {
         "azure_deployment": deployment_name,
-        "azure_endpoint": f"{parsed_url.scheme}://{parsed_url.netloc}",
+        "azure_endpoint": model_endpoint,
         "api_version": "",
     }
-
-    agent = ai_project.agents.get_agent(agent_id)
-    agent_client = get_agent_client(ai_project.agents)
     thread_data_converter = AIAgentConverter(ai_project)
+
+    # Look up the agent by name if agent Id is not provided
+    if not agent_id and agent_name:
+        for agent in ai_project.agents.list_agents():
+            if agent.name == agent_name:
+                agent_id = agent.id
+                break
+                
+    if not agent_id:
+        raise ValueError("Agent ID not found. Please provide a valid agent ID or name.") 
 
     # Read data input file 
     with open(eval_queries_path, "r", encoding="utf-8") as f:
@@ -63,16 +65,16 @@ def run_evaluation():
 
         for row in test_data:
             # Create a new thread for each query to isolate conversations
-            thread = agent_client.threads.create()
+            thread = ai_project.agents.threads.create()
             
-            # create the user query
-            agent_client.messages.create(
+            # Create the user query
+            ai_project.agents.messages.create(
                 thread.id, role=MessageRole.USER, content=row.get("query")
             )
 
-            # Run the agent and measure performance
+            # Run agent on thread and measure performance
             start_time = time.time()
-            run = agent_client.runs.create_and_process(
+            run = ai_project.agents.runs.create_and_process(
                 thread_id=thread.id, agent_id=agent.id
             )
             end_time = time.time()
@@ -101,22 +103,20 @@ def run_evaluation():
     # Now, run a sample set of evaluators using the evaluation input
     # See https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk
     # for the full list of evaluators availalbe
-    tool_call_accuracy = ToolCallAccuracyEvaluator(model_config=model_config)
-    intent_resolution = IntentResolutionEvaluator(model_config=model_config)
-    task_adherence = TaskAdherenceEvaluator(model_config=model_config)
-    #qa = QAEvaluator(model_config=model_config)
-    #content_safety = ContentSafetyEvaluator(model_config=model_config)
     results = evaluate(
         evaluation_name="evaluation-test",
         data=eval_input_path,
         evaluators={
-            "tool_call_accuracy": tool_call_accuracy,
-            "intent_resolution": intent_resolution,
-            "task_adherence": task_adherence,
             "operational_metrics": OperationalMetricsEvaluator(),
+            "tool_call_accuracy": ToolCallAccuracyEvaluator(model_config=model_config),
+            "intent_resolution": IntentResolutionEvaluator(model_config=model_config),
+            "task_adherence": TaskAdherenceEvaluator(model_config=model_config),
+            "code_vulnerability": CodeVulnerabilityEvaluator(credential=credential, azure_ai_project=project_endpoint),  
+            "content_safety": ContentSafetyEvaluator(credential=credential, azure_ai_project=project_endpoint),
+            "indirect_attack": IndirectAttackEvaluator(credential=credential, azure_ai_project=project_endpoint)
         },
         output_path=eval_output_path, # raw evaluation results
-        azure_ai_project=project_endpoint, # needed only if you want results uploaded to AI Foundry
+        azure_ai_project=project_endpoint, # if you want results uploaded to AI Foundry
     )
 
     # Print the evaluation results
@@ -146,11 +146,11 @@ def print_eval_results(results, input_path, output_path):
     print("Evaluation Results".center(full_len))
     print("=" * full_len)
     
-    # Print each metric
+    # Print all metrics, see evaluation output file for full details
     print(f"{'Metric':<{key_len}} | {'Value'}")
     print("-" * (key_len) + "-+-" + "-" * value_len)
     
-    for key, value in metrics.items():
+    for key, value in sorted(metrics.items()):
         if isinstance(value, float):
             formatted_value = f"{value:.2f}"
         else:
