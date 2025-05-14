@@ -104,6 +104,9 @@
     "azureExistingAIProjectResourceId": {
       "value": "${AZURE_EXISTING_AIPROJECT_RESOURCE_ID}"
     },
+    "azureExistingAIProjectEndpoint": {
+      "value": "${AZURE_EXISTING_AIPROJECT_ENDPOINT}"
+    },
     "aiSearchIndexName": {
       "value": "${AZURE_AI_SEARCH_INDEX_NAME=index_sample}"
     },

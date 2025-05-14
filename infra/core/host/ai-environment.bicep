@@ -152,6 +152,7 @@ output logAnalyticsWorkspaceName string = !empty(logAnalyticsName) ? logAnalytic
 output aiServiceId string = cognitiveServices.outputs.id
 output aiServicesName string = cognitiveServices.outputs.name
 output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI Language Model Instance API']
+output aiProjectEndpoint string = cognitiveServices.outputs.projectEndpoint
 
 output searchServiceId string = !empty(searchServiceName) ? searchService.outputs.id : ''
 output searchServiceName string = !empty(searchServiceName) ? searchService.outputs.name : ''

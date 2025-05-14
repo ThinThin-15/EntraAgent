@@ -99,3 +99,4 @@ output name string = account.name
 output projectResourceId string = aiProject.id
 output projectName string = aiProject.name
 output serviceName string = account.name
+output projectEndpoint string = aiProject.properties.endpoints['AI Foundry API']
