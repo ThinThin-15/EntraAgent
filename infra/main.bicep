@@ -31,8 +31,6 @@ param location string
 
 @description('Use this parameter to use an existing AI project resource ID')
 param azureExistingAIProjectResourceId string = ''
-@description('Use this parameter to use an existing Existing AI project endpoint')
-param azureExistingAIProjectEndpoint string = ''
 @description('The Azure resource group where new resources will be deployed')
 param resourceGroupName string = ''
 @description('The Azure AI Foundry Hub resource name. If ommited will be generated')
@@ -116,14 +114,9 @@ param enableAzureMonitorTracing bool = false
 @description('Do we want to use the Azure Monitor tracing for GenAI content recording')
 param azureTracingGenAIContentRecordingEnabled bool = false
 
-@description('Random seed to be used during generation of new resources suffixes.')
-param seed string = newGuid()
-
-@description('New resources suffixes.')
-param namingSuffix string = ''
 
 var abbrs = loadJsonContent('./abbreviations.json')
-var resourceToken = namingSuffix == '' ? toLower(uniqueString(subscription().id, environmentName, location, seed)) : namingSuffix
+var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
 output EXISTING_NAMING_SUFFIX string = resourceToken
 var tags = { 'azd-env-name': environmentName }
@@ -222,13 +215,14 @@ module logAnalytics 'core/monitor/loganalytics.bicep' = if (!empty(azureExisting
     name: logAnalyticsWorkspaceResolvedName
   }
 }
+var existingProjEndpoint = !empty(azureExistingAIProjectResourceId) ? format('https://{0}.services.ai.azure.com/api/projects/{1}',split(azureExistingAIProjectResourceId, '/')[8], split(azureExistingAIProjectResourceId, '/')[10]) : ''
 
 var projectResourceId = !empty(azureExistingAIProjectResourceId)
   ? azureExistingAIProjectResourceId
   : ai.outputs.projectResourceId
 
-var projectEndpoint = !empty(azureExistingAIProjectEndpoint)
-  ? azureExistingAIProjectEndpoint
+var projectEndpoint = !empty(azureExistingAIProjectResourceId)
+  ? existingProjEndpoint
   : ai.outputs.aiProjectEndpoint
 
 
