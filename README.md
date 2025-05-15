@@ -174,6 +174,39 @@ A related option is VS Code Dev Containers, which will open the project in your 
 </details>
 
 <details>
+  <summary><b>React Frontend Development</b></summary>
+
+#### React Frontend Development
+
+This project includes a React frontend application built with Vite. Follow these steps to develop and build the frontend locally:
+
+1. Make sure you have [Node.js](https://nodejs.org/) (v20 or later) installed
+
+2. Navigate to the frontend directory:
+
+    ```shell
+    cd src/frontend
+    ```
+
+3. Setup and build (Only needed the first time. For just building the app, use the command in #4):
+
+    ```shell
+    pnpm run setup
+    ```
+
+4. To just separately build the frontend app:
+
+    ```shell
+    pnpm build
+    ```
+
+   The build output will be placed in the `../api/static/react` directory, where the backend can serve it.
+
+Note: The Docker deployment process automatically builds the frontend during container creation, so you don't need to manually build it before deployment to Azure.
+
+</details>
+
+<details>
   <summary><b>Local Environment</b></summary>
 
 #### Local Environment
