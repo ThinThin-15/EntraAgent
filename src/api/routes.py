@@ -9,11 +9,11 @@ from typing import AsyncGenerator, Optional, Dict
 import fastapi
 import logging
 from fastapi import Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 
 from azure.ai.agents.aio import AgentsClient
-from fastapi.responses import JSONResponse
 from azure.ai.agents.models import (
     Agent,
     MessageDeltaChunk,
@@ -21,6 +21,13 @@ from azure.ai.agents.models import (
     ThreadRun,
     AsyncAgentEventHandler,
     RunStep
+)
+from azure.ai.projects import AIProjectClient
+from azure.ai.projects.models import (
+   AgentEvaluationRequest,
+   AgentEvaluationSamplingConfiguration,
+   AgentEvaluationRedactionConfiguration,
+   EvaluatorIds
 )
 
 # Create a logger for this module
@@ -36,14 +43,20 @@ templates = Jinja2Templates(directory=directory)
 # Create a new FastAPI router
 router = fastapi.APIRouter()
 
+def get_ai_project(request: Request) -> AIProjectClient:
+    return request.app.state.ai_project
 
 def get_agent_client(request: Request) -> AgentsClient:
     return request.app.state.agent_client
 
-
 def get_agent(request: Request) -> Agent:
     return request.app.state.agent
 
+def get_app_insights_conn_str(request: Request) -> str:
+    if hasattr(request.app.state, "application_insights_connection_string"):
+        return request.app.state.application_insights_connection_string
+    else:
+        return None
 
 def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
@@ -71,9 +84,12 @@ async def get_message_and_annotations(agent_client : AgentsClient, message: Thre
                 'annotations': annotations
             }
 class MyEventHandler(AsyncAgentEventHandler[str]):
-    def __init__(self, agent_client: Agent):
+    def __init__(self, request : Request, ai_project: AIProjectClient, app_insights_conn_str: str):
         super().__init__()
-        self.agent_client = agent_client
+        self.request = request
+        self.agent_client = ai_project.agents
+        self.ai_project = ai_project
+        self.app_insights_conn_str = app_insights_conn_str
 
     async def on_message_delta(self, delta: MessageDeltaChunk) -> Optional[str]:
         stream_data = {'content': delta.text, 'type': "message"}
@@ -100,6 +116,9 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
         stream_data = {'content': run_information, 'type': 'thread_run'}
         if run.status == "failed":
             stream_data['error'] = run.last_error.as_dict()
+        # automatically run agent evaluation when the run is completed
+        if run.status == "completed":
+            run_agent_evaluation(run.thread_id, run.id, self.ai_project, self.app_insights_conn_str)
         return serialize_sse_event(stream_data)
 
     async def on_error(self, data: str) -> Optional[str]:
@@ -136,13 +155,19 @@ async def index(request: Request):
     )
 
 
-async def get_result(thread_id: str, agent_id: str, agent_client : AgentsClient) -> AsyncGenerator[str, None]:
+async def get_result(
+    request : Request, 
+    thread_id: str, 
+    agent_id: str, 
+    ai_project: AIProjectClient,
+    app_insight_conn_str: str) -> AsyncGenerator[str, None]:
     logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
     try:
+        agent_client = ai_project.agents
         async with await agent_client.runs.stream(
             thread_id=thread_id, 
             agent_id=agent_id,
-            event_handler=MyEventHandler(agent_client)
+            event_handler=MyEventHandler(request, ai_project, app_insight_conn_str),
         ) as stream:
             logger.info("Successfully created stream; starting to process events")
             async for event in stream:
@@ -161,7 +186,7 @@ async def get_result(thread_id: str, agent_id: str, agent_client : AgentsClient)
 @router.get("/chat/history")
 async def history(
     request: Request,
-    agent_client : AgentsClient = Depends(get_agent_client),
+    ai_project : AIProjectClient = Depends(get_ai_project),
     agent : Agent = Depends(get_agent),
 ):
     # Retrieve the thread ID from the cookies (if available).
@@ -170,6 +195,7 @@ async def history(
 
     # Attempt to get an existing thread. If not found, create a new one.
     try:
+        agent_client = ai_project.agents
         if thread_id and agent_id == agent.id:
             logger.info(f"Retrieving thread with ID {thread_id}")
             thread = await agent_client.threads.get(thread_id)
@@ -210,8 +236,9 @@ async def history(
 @router.post("/chat")
 async def chat(
     request: Request,
-    agent_client : AgentsClient = Depends(get_agent_client),
     agent : Agent = Depends(get_agent),
+    ai_project: AIProjectClient = Depends(get_ai_project),
+    app_insights_conn_str : str = Depends(get_app_insights_conn_str)
 ):
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
@@ -219,6 +246,7 @@ async def chat(
 
     # Attempt to get an existing thread. If not found, create a new one.
     try:
+        agent_client = ai_project.agents
         if thread_id and agent_id == agent.id:
             logger.info(f"Retrieving thread with ID {thread_id}")
             thread = await agent_client.threads.get(thread_id)
@@ -262,7 +290,7 @@ async def chat(
     logger.info(f"Starting streaming response for thread ID {thread_id}")
 
     # Create the streaming response using the generator.
-    response = StreamingResponse(get_result(thread_id, agent_id, agent_client), headers=headers)
+    response = StreamingResponse(get_result(request, thread_id, agent_id, ai_project, app_insights_conn_str), headers=headers)
 
     # Update cookies to persist the thread and agent IDs.
     response.set_cookie("thread_id", thread_id)
@@ -272,3 +300,42 @@ async def chat(
 def read_file(path: str) -> str:
     with open(path, 'r') as file:
         return file.read()
+
+
+def run_agent_evaluation(
+    thread_id: str, 
+    run_id: str,
+    ai_project: AIProjectClient,
+    app_insights_conn_str: str):
+
+    if app_insights_conn_str:
+        agent_evaluation_request = AgentEvaluationRequest(
+            run_id=run_id,
+            thread_id=thread_id,
+            evaluators={
+                "Relevance": {"Id": EvaluatorIds.RELEVANCE.value},
+                "TaskAdherence": {"Id": EvaluatorIds.TASK_ADHERENCE.value},
+                "ToolCallAccuracy": {"Id": EvaluatorIds.TOOL_CALL_ACCURACY.value},
+            },
+            sampling_configuration=AgentEvaluationSamplingConfiguration(
+                name="default",
+                sampling_percent=100,
+            ),
+            redaction_configuration=AgentEvaluationRedactionConfiguration(
+                redact_score_properties=False,
+            ),
+            app_insights_connection_string=app_insights_conn_str,
+        )
+        
+        async def run_evaluation():
+            try:        
+                logger.info(f"Running agent evaluation on thread ID {thread_id} and run ID {run_id}")
+                agent_evaluation_response = await ai_project.evaluations.create_agent_evaluation(
+                    evaluation=agent_evaluation_request
+                )
+                logger.info(f"Evaluation response: {agent_evaluation_response}")
+            except Exception as e:
+                logger.error(f"Error creating agent evaluation: {e}")
+
+        # Create a new task to run the evaluation asynchronously
+        asyncio.create_task(run_evaluation())

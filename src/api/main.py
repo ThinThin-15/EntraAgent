@@ -33,7 +33,7 @@ async def lifespan(app: fastapi.FastAPI):
         ai_project = AIProjectClient(
             credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
             endpoint=proj_endpoint,
-            api_version = "2025-05-01"            
+            api_version = "2025-05-15-preview" # Evaluations yet not supported on stable (api_version="2025-05-01")
         )
         logger.info("Created AIProjectClient")
 
@@ -51,8 +51,13 @@ async def lifespan(app: fastapi.FastAPI):
             else:
                 from azure.monitor.opentelemetry import configure_azure_monitor
                 configure_azure_monitor(connection_string=application_insights_connection_string)
-                # Do not instrument the code yet, before trace fix is available.
-                #ai_project.telemetry.enable()
+                app.state.application_insights_connection_string = application_insights_connection_string
+                
+                from azure.ai.agents.telemetry import AIAgentsInstrumentor
+                agents_instrumentor = AIAgentsInstrumentor()
+                if not agents_instrumentor.is_instrumented():
+                    agents_instrumentor.instrument()
+                    logger.info("Configured Application Insights for tracing.")
 
         if agent_id:
             try: 
@@ -77,7 +82,7 @@ async def lifespan(app: fastapi.FastAPI):
         if not agent:
             raise RuntimeError("No agent found. Ensure qunicorn.py created one or set AZURE_EXISTING_AGENT_ID.")
 
-        app.state.agent_client = ai_project.agents
+        app.state.ai_project = ai_project
         app.state.agent = agent
         
         yield
@@ -125,8 +130,8 @@ def create_app():
     
     # Mount React static files
     # Uncomment the following lines if you have a React frontend
-    # react_directory = os.path.join(os.path.dirname(__file__), "static/react")
-    # app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
+    react_directory = os.path.join(os.path.dirname(__file__), "static/react")
+    app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
 
     from . import routes  # Import routes
     app.include_router(routes.router)

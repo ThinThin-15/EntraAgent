@@ -24,10 +24,9 @@ def run_evaluation():
     load_dotenv(dotenv_path=env_path)
 
     # Get AI project parameters from environment variables
-    ai_project_resource_id = os.environ.get("AZURE_EXISTING_AIPROJECT_RESOURCE_ID")
-    parts = ai_project_resource_id.split("/")    
-    project_endpoint = f'https://{parts[8]}.services.ai.azure.com/api/projects/{parts[10]}'
-    model_endpoint = f'https://{parts[8]}.services.ai.azure.com'
+    project_endpoint = os.environ.get("AZURE_EXISTING_AIPROJECT_ENDPOINT")
+    parsed_endpoint = urlparse(project_endpoint)
+    model_endpoint = f"{parsed_endpoint.scheme}://{parsed_endpoint.netloc}"
     deployment_name = os.getenv("AZURE_AI_AGENT_DEPLOYMENT_NAME")
     agent_name = os.environ.get("AZURE_AI_AGENT_NAME")
     agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
