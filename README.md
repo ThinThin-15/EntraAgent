@@ -1,7 +1,7 @@
 # Getting Started with Agents Using Azure AI Foundry 
 
 
-The agent leverages the Azure AI Agent service and utilizes Azure AI Search for knowledge retrieval from uploaded files, enabling it to generate responses with citations. The solution also includes built-in monitoring capabilities with tracing to ensure easier troubleshooting and optimized performance.
+The agent leverages the Azure AI Agent service and utilizes file search for knowledge retrieval from uploaded files, enabling it to generate responses with citations. The solution also includes built-in monitoring capabilities with tracing to ensure easier troubleshooting and optimized performance.
 
 
 
@@ -17,7 +17,7 @@ The agent leverages the Azure AI Agent service and utilizes Azure AI Search for 
 
 This solution deploys a web-based chat application with an AI agent running in Azure Container Apps. 
 
-This solution creates an Azure AI Foundry hub, project and connected resources including Azure AI Services, AI Search and more. More details about the resources can be found in the [resources](#resources) documentation. There are options to enable Retrieval-Augmented Generation (RAG) and use logging, tracing, and monitoring. 
+This solution creates an Azure AI Foundry project and Azure AI services. More details about the resources can be found in the [resources](#resources) documentation. There are options to enable Retrieval-Augmented Generation (RAG) and use logging, tracing, and monitoring. 
 
 Instructions are provided for deployment through GitHub Codespaces, VS Code Dev Containers, and your local development environment.
 
@@ -25,17 +25,17 @@ Instructions are provided for deployment through GitHub Codespaces, VS Code Dev 
 
 ### Solution Architecture
 
-![Architecture diagram showing that user input is provided to the Azure Container App, which contains the app code. With user identity and resource access through managed identity, the input is used to form a response. The input and the Azure monitor are able to use the Azure resources deployed in the solution: Application Insights, Azure AI Project, Azure AI Services, Azure AI Hub, Storage account, Azure Container App, Container Registry, Key Vault, and Log Analytics Workspace.](docs/architecture.png)
+![Architecture diagram showing that user input is provided to the Azure Container App, which contains the app code. With user identity and resource access through managed identity, the input is used to form a response. The input and the Azure monitor are able to use the Azure resources deployed in the solution: Application Insights, Azure AI Foundry Project, Azure AI Services, Storage account, Azure Container App, and Log Analytics Workspace.](docs/architecture.png)
 
 The app code runs in Azure Container apps to process the user input and generate a response to the user. It leverages Azure AI projects and Azure AI services, including the model and agent.
 
 
 ### Key Features
-- **Agent-Based Knowledge Retrieval with Citations**<br/>
-The AI agent uses Azure AI Search to retrieve knowledge from uploaded files and generates responses with proper citations, ensuring accurate and traceable information.
+- **Agent-Based Knowledge Retrieval**<br/>
+The AI agent uses file search to retrieve knowledge from uploaded files.
 
 - **Customizable AI Model Deployment**<br/>
-The solution allows users to configure and deploy AI models, such as gpt-4o-mini, with options to adjust model capacity, embedding models, and knowledge retrieval methods.
+The solution allows users to configure and deploy AI models, such as gpt-4o-mini, with options to adjust model capacity, and knowledge retrieval methods.
 
 - **Built-in Monitoring and Tracing**<br/>
 Integrated monitoring capabilities, including Azure Monitor and Application Insights, enable tracing and logging for easier troubleshooting and performance optimization.
@@ -82,8 +82,7 @@ Make sure the following tools are installed:
 1. [Azure Developer CLI (azd)](https://aka.ms/install-azd) Install or update to the latest version. Instructions can be found on the linked page.
 2. [Python 3.9+](https://www.python.org/downloads/)
 3. [Git](https://git-scm.com/downloads)
-4. [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-5. \[Windows Only\] [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) of the latest version, needed only for local application development on Windows operation system. Please make sure that power shell executable `pwsh.exe` is added to the `PATH` variable.
+4. \[Windows Only\] [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) of the latest version, needed only for local application development on Windows operation system. Please make sure that power shell executable `pwsh.exe` is added to the `PATH` variable.
 
 ## Configure your Environment
 
@@ -105,30 +104,23 @@ When you start a deployment, most parameters will have default values. You can c
 
 | **Setting** | **Description** |  **Default value** |
 |------------|----------------|  ------------|
-| **Existing Project Connection String** | Specify an existing project connection string to be used instead of provisioning new resources. |   |
+| **Existing Project Resource ID and Endpoint** | Specify an existing project resource ID and endpoint to be used instead of provisioning new resources. |   |
 | **Azure Region** | Select a region with quota which supports your selected model. |   |
 | **Model** | Choose from the [list of models supported by Azure AI Agent Service](https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support) for your selected region. | gpt-4o-mini |  
 | **Model Format** | Choose from OpenAI or Microsoft, depending on your model. | OpenAI |  
 | **Model Deployment Capacity** | Configure capacity for your model. Recommended value is 100k. | 30k |
-| **Embedding Model** | Choose from text-embedding-3-large, text-embedding-3-small, and text-embedding-ada-002. This may only be deployed if Azure AI Search is enabled. |  text-embedding-3-small |
-| **Embedding Model Capacity** | Configure capacity for your embedding model. |  30k |
-| **Knowledge Retrieval** | Choose from OpenAI's file search or including Azure AI Search Index. |  OpenAI's file search |
 
 For a detailed description of customizable fields and instructions, view the [deployment customization guide](docs/deploy_customization.md).
 
 #### How to configure Agent model and version
 
-By default, the template uses model `gpt-4o-mini`, version `2024-07-18` for text generation and `text-embedding-3-small` version `1` for embeddings. If you want to personalize your agent, you can change the default configuration for your agent. Additional details on changing your agent can be found in [customizing model deployments](docs/deploy_customization.md#customizing-model-deployments). For more information on the Azure OpenAI models and non-Microsoft models that can be used in your deployment, view the [list of models supported by Azure AI Agent Service](https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support).
+By default, the template uses model `gpt-4o-mini`, version `2024-07-18` for text generation. If you want to personalize your agent, you can change the default configuration for your agent. Additional details on changing your agent can be found in [customizing model deployments](docs/deploy_customization.md#customizing-model-deployments). For more information on the Azure OpenAI models and non-Microsoft models that can be used in your deployment, view the [list of models supported by Azure AI Agent Service](https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support).
 
 To specify the model (e.g. gpt-4o-mini, gpt-4o) that is deployed for the agent when `azd up` is called, set the following environment variables:
 ```shell
 azd env set AZURE_AI_AGENT_MODEL_NAME <MODEL_NAME>
 azd env set AZURE_AI_AGENT_MODEL_VERSION <MODEL_VERSION>
 ```
-
-#### How to configure Agent knowledge retrieval
-By default, the template deploys OpenAI's [file search](https://learn.microsoft.com/azure/ai-services/agents/how-to/tools/file-search?tabs=python&pivots=overview) for agent's knowledge retrieval. An agent also can perform search using the search index, deployed in Azure AI Search resource. The semantic index search represents so-called hybrid search i.e. it uses LLM to search for the relevant context in the provided index as well as embedding similarity search. This index is built from the `embeddings.csv` file, containing the embeddings vectors, followed by the contexts.
-To use index search, please set the local environment variable `USE_AZURE_AI_SEARCH_SERVICE` to `true` during the `azd up` command. In this case the Azure AI Search resource will be deployed and used. For more information on Azure AI serach, please see the [Azure AI Search Setup Guide](docs/ai_search.md)
 
 #### Logging
 To enable logging to a file, navigate to `src/Dockerfile` and edit the code to uncomment the following line:
@@ -162,7 +154,7 @@ The default for the model capacity in deployment is 30k tokens. For optimal perf
 
 * Navigate to the home screen of the [Azure AI Foundry Portal](https://ai.azure.com/)
 * Select Quota Management buttom at the bottom of the home screen
-* In the Quota tab, click the GlobalStandard dropdown and select the model and region you are using for this accelerator to see your available quota. Please note gpt-4o-mini and text-embedding-ada-002 are used as default.
+* In the Quota tab, click the GlobalStandard dropdown and select the model and region you are using for this accelerator to see your available quota. Please note gpt-4o-mini is used as default.
 * Request more quota or delete any unused model deployments as needed.
 
 ## Deployment
@@ -248,24 +240,40 @@ You can optionally use a local development server to test app changes locally. M
     python -m pip install -r requirements.txt
     ```
 
-4. Duplicate `src/.env.sample` and name to `.env`.
-
-5. Fill in the environment variables in `.env`.
+4. Install [Node.js](https://nodejs.org/) (v20 or later).
    
-6. (Optional) If you have change in `gunicorn.conf.py`, execute:
+5. Navigate to the frontend directory and setup for React UI:
+
+    ```shell
+    cd src/frontend
+    pnpm run setup
+    ```
+
+6. Fill in the environment variables in `.env`.
+
+(Optional) if you have changes in `src/frontend`, execute:
+
+    ```shell
+    pnpm build
+    ```
+
+The build output will be placed in the `../api/static/react` directory, where the backend can serve it.
+   
+(Optional) If you have changes in `gunicorn.conf.py`, execute:
+
     ```shell
     python gunicorn.conf.py    
     ```
 
-7. Run the local server:
+1. Run the local server:
 
     ```shell
     python -m uvicorn "api.main:create_app" --factory --reload
     ```
 
-8. Click 'http://127.0.0.1:8000' in the terminal, which should open a new tab in the browser.
+2. Click 'http://127.0.0.1:8000' in the terminal, which should open a new tab in the browser.
 
-9.  Enter your message in the box.
+3.  Enter your message in the box.
 </details>
 
 ### Deploying Steps
@@ -363,17 +371,13 @@ You can view the App Insights tracing in Azure AI Foundry. Select your project o
 
 Pricing varies per region and usage, so it isn't possible to predict exact costs for your usage.
 The majority of the Azure resources used in this infrastructure are on usage-based pricing tiers.
-However, Azure Container Registry has a fixed cost per registry per day.
 
 You can try the [Azure pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator) for the resources:
 
 * Azure AI Foundry: Free tier. [Pricing](https://azure.microsoft.com/pricing/details/ai-studio/)
-* Azure AI Search: Standard tier, S1. Pricing is based on the number of documents and operations. [Pricing](https://azure.microsoft.com/pricing/details/search/)
 * Azure Storage Account: Standard tier, LRS. Pricing is based on storage and operations. [Pricing](https://azure.microsoft.com/pricing/details/storage/blobs/)
-* Azure Key Vault: Standard tier. Pricing is based on the number of operations. [Pricing](https://azure.microsoft.com/pricing/details/key-vault/)
-* Azure AI Services: S0 tier, defaults to gpt-4o-mini and text-embedding-ada-002 models. Pricing is based on token count. [Pricing](https://azure.microsoft.com/pricing/details/cognitive-services/)
+* Azure AI Services: S0 tier, defaults to gpt-4o-mini. Pricing is based on token count. [Pricing](https://azure.microsoft.com/pricing/details/cognitive-services/)
 * Azure Container App: Consumption tier with 0.5 CPU, 1GiB memory/storage. Pricing is based on resource allocation, and each month allows for a certain amount of free usage. [Pricing](https://azure.microsoft.com/pricing/details/container-apps/)
-* Azure Container Registry: Basic tier. [Pricing](https://azure.microsoft.com/pricing/details/container-registry/)
 * Log analytics: Pay-as-you-go tier. Costs based on data ingested. [Pricing](https://azure.microsoft.com/pricing/details/monitor/)
 
 ⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use,
@@ -381,7 +385,6 @@ either by deleting the resource group in the Portal or running `azd down`.
 
 #### Security guidelines
 
-This template uses Azure AI Foundry connections to communicate between resources, which stores keys in Azure Key Vault.
 This template also uses [Managed Identity](https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview) for local development and deployment.
 
 To ensure continued best practices in your own repository, we recommend that anyone creating solutions based on our templates ensure that the [Github secret scanning](https://docs.github.com/code-security/secret-scanning/about-secret-scanning) setting is enabled.
@@ -400,17 +403,13 @@ For a more comprehensive list of best practices and security recommendations for
 
 This template creates everything you need to get started with Azure AI Foundry:
 
-* [AI Hub Resource](https://learn.microsoft.com/azure/ai-studio/concepts/ai-resources)
 * [AI Project](https://learn.microsoft.com/azure/ai-studio/how-to/create-projects)
-* [Azure AI Service](https://learn.microsoft.com/azure/ai-services): Default models deployed are gpt-4o-mini and text-embedding-ada-002, but any Azure AI models can be specified per the [documentation](docs/deploy_customization.md#customizing-model-deployments).
-* [AI Search Service](https://learn.microsoft.com/azure/search/) *(Optional, enabled by default)*
+* [Azure AI Service](https://learn.microsoft.com/azure/ai-services): Default models deployed are gpt-4o-mini, but any Azure AI models can be specified per the [documentation](docs/deploy_customization.md#customizing-model-deployments).
 
-The template also includes dependent resources required by all AI Hub resources:
+The template also includes dependent resources:
 
 * [Storage Account](https://learn.microsoft.com/azure/storage/blobs/)
-* [Key Vault](https://learn.microsoft.com/azure/key-vault/general/)
 * [Application Insights](https://learn.microsoft.com/azure/azure-monitor/app/app-insights-overview) *(Optional, enabled by default)*
-* [Container Registry](https://learn.microsoft.com/azure/container-registry/) *(Optional, enabled by default)*
 
 ## Troubleshooting
 

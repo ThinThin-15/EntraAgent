@@ -128,14 +128,8 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    # Check if the useReactApp query parameter is present and set to 'true'
-    use_react_app = request.query_params.get('useReactApp', '').lower() == 'true'
-    
-    # Use different template files based on whether React is enabled
-    template_name = "index_react.html" if use_react_app else "index.html"
-    
     return templates.TemplateResponse(
-        template_name, 
+        "index.html", 
         {
             "request": request,
         }
@@ -274,28 +268,6 @@ async def chat(
     response.set_cookie("thread_id", thread_id)
     response.set_cookie("agent_id", agent_id)
     return response
-
-
-@router.get("/fetch-document")
-async def fetch_document(request: Request):
-    file_name = request.query_params.get('file_name')
-    if not file_name:
-        raise HTTPException(status_code=400, detail="file_name is required")
-
-    folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'files'))
-
-    file_path = os.path.join(folder_path, file_name)
-
-    if file_name not in os.listdir(folder_path): 
-        raise HTTPException(status_code=404, detail="File not found")
-
-    try:
-        data = await asyncio.to_thread(read_file, file_path)
-        return PlainTextResponse(data)
-    except Exception as e:
-        logger.error(f"Error fetching document for file_name {file_name}: {e}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
 
 def read_file(path: str) -> str:
     with open(path, 'r') as file:
