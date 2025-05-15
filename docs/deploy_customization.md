@@ -22,7 +22,7 @@ Once you disable these resources, they will not be deployed when you run `azd up
 By default, this template will use a naming convention with unique strings to prevent naming collisions within Azure.
 To override default naming conventions, the following keys can be set:
 
-* `AZURE_EXISTING_AIPROJECT_RESOURCE_ID` and `AZURE_EXISTING_AIPROJECT_ENDPOINT` - An existing AI Project Resource ID and End Point be used.   If both specified, container app will use existing Azure AI foundry and Azure AI project.
+* `AZURE_EXISTING_AIPROJECT_RESOURCE_ID` - An existing AI Project Resource ID be used.   If specified, resources for AI Foundry Project and Azure AI service will not be created.
 * `AZURE_AIPROJECT_NAME` - The name of the AI Foundry Project
 * `AZURE_AISERVICES_NAME` - The name of the Azure AI service
 * `AZURE_STORAGE_ACCOUNT_NAME` - The name of the Storage Account

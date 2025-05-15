@@ -104,9 +104,6 @@
     "azureExistingAIProjectResourceId": {
       "value": "${AZURE_EXISTING_AIPROJECT_RESOURCE_ID}"
     },
-    "azureExistingAIProjectEndpoint": {
-      "value": "${AZURE_EXISTING_AIPROJECT_ENDPOINT}"
-    },
     "aiSearchIndexName": {
       "value": "${AZURE_AI_SEARCH_INDEX_NAME=index_sample}"
     },
@@ -115,9 +112,6 @@
     },
     "azureTracingGenAIContentRecordingEnabled": {
       "value": "${AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=false}"
-    },
-    "namingSuffix": {
-      "value": "${NAMING_SUFFIX}"
     }
   }
 }
