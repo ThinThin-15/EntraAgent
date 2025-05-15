@@ -31,6 +31,8 @@ param location string
 
 @description('Use this parameter to use an existing AI project resource ID')
 param azureExistingAIProjectResourceId string = ''
+@description('Use this parameter to use an existing Existing AI project endpoint')
+param azureExistingAIProjectEndpoint string = ''
 @description('The Azure resource group where new resources will be deployed')
 param resourceGroupName string = ''
 @description('The Azure AI Foundry Hub resource name. If ommited will be generated')
@@ -117,8 +119,13 @@ param azureTracingGenAIContentRecordingEnabled bool = false
 @description('Random seed to be used during generation of new resources suffixes.')
 param seed string = newGuid()
 
+@description('New resources suffixes.')
+param namingSuffix string = ''
+
 var abbrs = loadJsonContent('./abbreviations.json')
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
+var resourceToken = namingSuffix == '' ? toLower(uniqueString(subscription().id, environmentName, location, seed)) : namingSuffix
+
+output EXISTING_NAMING_SUFFIX string = resourceToken
 var tags = { 'azd-env-name': environmentName }
 
 var tempAgentID = !empty(aiAgentID) ? aiAgentID : ''
@@ -216,12 +223,10 @@ module logAnalytics 'core/monitor/loganalytics.bicep' = if (!empty(azureExisting
   }
 }
 
-
-
-var projectResourceId = !empty(azureExistingAIProjectResourceId)
-  ? azureExistingAIProjectResourceId
-  : ai.outputs.projectResourceId
-
+var hostName = empty(aiExistingProjectConnectionString) && !empty(ai.outputs.discoveryUrl) && contains(ai.outputs.discoveryUrl, '/') ? split(ai.outputs.discoveryUrl, '/')[2] : ''
+var projectConnectionString = empty(hostName)
+  ? aiExistingProjectConnectionString
+  : '${hostName};${subscription().subscriptionId};${rg.name};${projectName}'
 
 var resolvedApplicationInsightsName = !useApplicationInsights || !empty(azureExistingAIProjectResourceId)
   ? ''
@@ -231,6 +236,7 @@ module monitoringMetricsContribuitorRoleAzureAIDeveloperRG 'core/security/appins
   name: 'monitoringmetricscontributor-role-azureai-developer-rg'
   scope: rg
   params: {
+    principalType: 'ServicePrincipal'
     appInsightsName: resolvedApplicationInsightsName
     principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
   }
@@ -284,9 +290,16 @@ module api 'api.bicep' = {
     embeddingDeploymentDimensions: embeddingDeploymentDimensions
     agentName: agentName
     agentID: agentID
-    projectName: aiProjectName
-    enableAzureMonitorTracing: enableAzureMonitorTracing
-    azureTracingGenAIContentRecordingEnabled: azureTracingGenAIContentRecordingEnabled
+    projectName: projectName
+  }
+}
+
+module userAcrRolePush 'core/security/role.bicep' = {
+  name: 'user-role-acr-push'
+  scope: rg
+  params: {
+    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    roleDefinitionId: '8311e382-0749-4cb8-b61a-304f252e45ec'
   }
 }
 
@@ -406,6 +419,7 @@ output AZURE_AI_SEARCH_ENDPOINT string = searchServiceEndpoint
 output AZURE_AI_EMBED_DIMENSIONS string = embeddingDeploymentDimensions
 output AZURE_AI_AGENT_NAME string = agentName
 output AZURE_EXISTING_AGENT_ID string = agentID
+output AZURE_EXISTING_AIPROJECT_ENDPOINT string = projectEndpoint
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName
@@ -413,3 +427,4 @@ output SERVICE_API_IDENTITY_PRINCIPAL_ID string = api.outputs.SERVICE_API_IDENTI
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output SERVICE_API_URI string = api.outputs.SERVICE_API_URI
 output SERVICE_API_ENDPOINTS array = ['${api.outputs.SERVICE_API_URI}']
+output SEARCH_CONNECTION_ID string = ''

@@ -123,28 +123,9 @@ module cognitiveServices '../ai/cognitiveservices.bicep' = {
   }
 }
 
-resource searchConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' =
-  if (!empty(searchConnectionName)) {
-    name: searchConnectionName
-    properties: {
-      category: 'CognitiveSearch'
-      authType: 'ApiKey'
-      isSharedToAll: true
-      target: 'https://${search.name}.search.windows.net/'
-      credentials: {
-        key: !empty(search) ? search.listAdminKeys().primaryKey : ''
-      }
-    }
-  }
-
-  resource search 'Microsoft.Search/searchServices@2021-04-01-preview' existing =
-  if (!empty(searchServiceName)) {
-    name: searchServiceName
-  }
-
-
 module searchService '../search/search-services.bicep' =
   if (!empty(searchServiceName)) {
+    dependsOn: [cognitiveServices]
     name: 'searchService'
     params: {
       location: location
@@ -152,6 +133,8 @@ module searchService '../search/search-services.bicep' =
       name: searchServiceName
       semanticSearch: 'free'
       authOptions: { aadOrApiKey: { aadAuthFailureMode: 'http401WithBearerChallenge'}}
+      projectName: cognitiveServices.outputs.projectName
+      serviceName: cognitiveServices.outputs.serviceName
     }
   }
 
@@ -169,9 +152,12 @@ output logAnalyticsWorkspaceName string = !empty(logAnalyticsName) ? logAnalytic
 output aiServiceId string = cognitiveServices.outputs.id
 output aiServicesName string = cognitiveServices.outputs.name
 output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI Language Model Instance API']
+output aiProjectEndpoint string = cognitiveServices.outputs.projectEndpoint
 
 output searchServiceId string = !empty(searchServiceName) ? searchService.outputs.id : ''
 output searchServiceName string = !empty(searchServiceName) ? searchService.outputs.name : ''
 output searchServiceEndpoint string = !empty(searchServiceName) ? searchService.outputs.endpoint : ''
 
 output projectResourceId string = cognitiveServices.outputs.projectResourceId
+output searchConnectionId string = !empty(searchServiceName) ? searchService.outputs.searchConnectionId : ''
+
