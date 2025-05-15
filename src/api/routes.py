@@ -12,18 +12,14 @@ from fastapi import Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
-from azure.ai.projects.aio import AIProjectClient
+from azure.ai.agents.aio import AgentsClient
 from fastapi.responses import JSONResponse
-from azure.ai.projects.models import (
+from azure.ai.agents.models import (
     Agent,
     MessageDeltaChunk,
     ThreadMessage,
     ThreadRun,
     AsyncAgentEventHandler,
-    OpenAIPageableListOfThreadMessage,
-    MessageTextContent,
-    MessageTextFileCitationAnnotation,
-    MessageTextUrlCitationAnnotation,
     RunStep
 )
 
@@ -41,8 +37,8 @@ templates = Jinja2Templates(directory=directory)
 router = fastapi.APIRouter()
 
 
-def get_ai_client(request: Request) -> AIProjectClient:
-    return request.app.state.ai_client
+def get_agent_client(request: Request) -> AgentsClient:
+    return request.app.state.agent_client
 
 
 def get_agent(request: Request) -> Agent:
@@ -52,13 +48,13 @@ def get_agent(request: Request) -> Agent:
 def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
-async def get_message_and_annotations(ai_client : AIProjectClient, message: ThreadMessage) -> Dict:
+async def get_message_and_annotations(agent_client : AgentsClient, message: ThreadMessage) -> Dict:
         annotations = []
         # Get file annotations for the file search.
         for annotation in (a.as_dict() for a in message.file_citation_annotations):
             file_id = annotation["file_citation"]["file_id"]
             logger.info(f"Fetching file with ID for annotation {file_id}")
-            openai_file = await ai_client.agents.get_file(file_id)
+            openai_file = await agent_client.files.get(file_id)
             annotation["file_name"] = openai_file.filename
             logger.info(f"File name for annotation: {annotation['file_name']}")
             annotations.append(annotation)
@@ -75,9 +71,9 @@ async def get_message_and_annotations(ai_client : AIProjectClient, message: Thre
                 'annotations': annotations
             }
 class MyEventHandler(AsyncAgentEventHandler[str]):
-    def __init__(self, ai_client: AIProjectClient):
+    def __init__(self, agent_client: Agent):
         super().__init__()
-        self.ai_client = ai_client
+        self.agent_client = agent_client
 
     async def on_message_delta(self, delta: MessageDeltaChunk) -> Optional[str]:
         stream_data = {'content': delta.text, 'type': "message"}
@@ -91,7 +87,7 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
 
             logger.info("MyEventHandler: Received completed message")
 
-            stream_data = await get_message_and_annotations(self.ai_client, message)
+            stream_data = await get_message_and_annotations(self.agent_client, message)
             stream_data['type'] = "completed_message"
             return serialize_sse_event(stream_data)
         except Exception as e:
@@ -132,27 +128,21 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    # Check if the useReactApp query parameter is present and set to 'true'
-    use_react_app = request.query_params.get('useReactApp', '').lower() == 'true'
-    
-    # Use different template files based on whether React is enabled
-    template_name = "index_react.html" if use_react_app else "index.html"
-    
     return templates.TemplateResponse(
-        template_name, 
+        "index.html", 
         {
             "request": request,
         }
     )
 
 
-async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient) -> AsyncGenerator[str, None]:
+async def get_result(thread_id: str, agent_id: str, agent_client : AgentsClient) -> AsyncGenerator[str, None]:
     logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
     try:
-        async with await ai_client.agents.create_stream(
+        async with await agent_client.runs.stream(
             thread_id=thread_id, 
             agent_id=agent_id,
-            event_handler=MyEventHandler(ai_client)
+            event_handler=MyEventHandler(agent_client)
         ) as stream:
             logger.info("Successfully created stream; starting to process events")
             async for event in stream:
@@ -171,7 +161,7 @@ async def get_result(thread_id: str, agent_id: str, ai_client : AIProjectClient)
 @router.get("/chat/history")
 async def history(
     request: Request,
-    ai_client : AIProjectClient = Depends(get_ai_client),
+    agent_client : AgentsClient = Depends(get_agent_client),
     agent : Agent = Depends(get_agent),
 ):
     # Retrieve the thread ID from the cookies (if available).
@@ -182,10 +172,10 @@ async def history(
     try:
         if thread_id and agent_id == agent.id:
             logger.info(f"Retrieving thread with ID {thread_id}")
-            thread = await ai_client.agents.get_thread(thread_id)
+            thread = await agent_client.threads.get(thread_id)
         else:
             logger.info("Creating a new thread")
-            thread = await ai_client.agents.create_thread()
+            thread = await agent_client.threads.create()
     except Exception as e:
         logger.error(f"Error handling thread: {e}")
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
@@ -196,11 +186,11 @@ async def history(
     # Create a new message from the user's input.
     try:
         content = []
-        response = await ai_client.agents.list_messages(
+        response = agent_client.messages.list(
             thread_id=thread_id,
         )
-        for message in response.data:
-            formated_message = await get_message_and_annotations(ai_client, message)
+        async for message in response:
+            formated_message = await get_message_and_annotations(agent_client, message)
             formated_message['role'] = message.role
             content.append(formated_message)
                 
@@ -220,7 +210,7 @@ async def history(
 @router.post("/chat")
 async def chat(
     request: Request,
-    ai_client : AIProjectClient = Depends(get_ai_client),
+    agent_client : AgentsClient = Depends(get_agent_client),
     agent : Agent = Depends(get_agent),
 ):
     # Retrieve the thread ID from the cookies (if available).
@@ -231,10 +221,10 @@ async def chat(
     try:
         if thread_id and agent_id == agent.id:
             logger.info(f"Retrieving thread with ID {thread_id}")
-            thread = await ai_client.agents.get_thread(thread_id)
+            thread = await agent_client.threads.get(thread_id)
         else:
             logger.info("Creating a new thread")
-            thread = await ai_client.agents.create_thread()
+            thread = await agent_client.threads.create()
     except Exception as e:
         logger.error(f"Error handling thread: {e}")
         raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
@@ -253,7 +243,7 @@ async def chat(
 
     # Create a new message from the user's input.
     try:
-        message = await ai_client.agents.create_message(
+        message = await agent_client.messages.create(
             thread_id=thread_id,
             role="user",
             content=user_message.get('message', '')
@@ -272,34 +262,12 @@ async def chat(
     logger.info(f"Starting streaming response for thread ID {thread_id}")
 
     # Create the streaming response using the generator.
-    response = StreamingResponse(get_result(thread_id, agent_id, ai_client), headers=headers)
+    response = StreamingResponse(get_result(thread_id, agent_id, agent_client), headers=headers)
 
     # Update cookies to persist the thread and agent IDs.
     response.set_cookie("thread_id", thread_id)
     response.set_cookie("agent_id", agent_id)
     return response
-
-
-@router.get("/fetch-document")
-async def fetch_document(request: Request):
-    file_name = request.query_params.get('file_name')
-    if not file_name:
-        raise HTTPException(status_code=400, detail="file_name is required")
-
-    folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'files'))
-
-    file_path = os.path.join(folder_path, file_name)
-
-    if file_name not in os.listdir(folder_path): 
-        raise HTTPException(status_code=404, detail="File not found")
-
-    try:
-        data = await asyncio.to_thread(read_file, file_path)
-        return PlainTextResponse(data)
-    except Exception as e:
-        logger.error(f"Error fetching document for file_name {file_name}: {e}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
 
 def read_file(path: str) -> str:
     with open(path, 'r') as file:

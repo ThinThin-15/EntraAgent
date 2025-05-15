@@ -5,7 +5,8 @@ $envFilePath = "src\.env"
 Set-Content -Path $envFilePath -Value ""
 
 # Append new values to the .env file
-$azureAiProjectConnectionString = azd env get-value AZURE_EXISTING_AIPROJECT_CONNECTION_STRING
+$aiProjectResourceId = azd env get-value AZURE_EXISTING_AIPROJECT_RESOURCE_ID
+$aiProjectEndpoint = azd env get-value AZURE_EXISTING_AIPROJECT_ENDPOINT
 $azureAiagentDeploymentName = azd env get-value AZURE_AI_AGENT_DEPLOYMENT_NAME
 $azureAiAgentId = azd env get-value AZURE_EXISTING_AGENT_ID
 $azureAiAgentName = azd env get-value AZURE_AI_AGENT_NAME
@@ -17,7 +18,8 @@ $azureAISearchIndexName = azd env get-value AZURE_AI_SEARCH_INDEX_NAME
 $azureAISearchEndpoint = azd env get-value AZURE_AI_SEARCH_ENDPOINT
 $serviceAPIUri = azd env get-value SERVICE_API_URI
 
-Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_CONNECTION_STRING=$azureAiProjectConnectionString"
+Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_RESOURCE_ID=$aiProjectResourceId"
+Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_ENDPOINT=$aiProjectEndpoint"
 Add-Content -Path $envFilePath -Value "AZURE_AI_AGENT_DEPLOYMENT_NAME=$azureAiagentDeploymentName"
 Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AGENT_ID=$azureAiAgentId"
 Add-Content -Path $envFilePath -Value "AZURE_TENANT_ID=$azureTenantId"
