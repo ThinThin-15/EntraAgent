@@ -223,10 +223,14 @@ module logAnalytics 'core/monitor/loganalytics.bicep' = if (!empty(azureExisting
   }
 }
 
-var hostName = empty(aiExistingProjectConnectionString) && !empty(ai.outputs.discoveryUrl) && contains(ai.outputs.discoveryUrl, '/') ? split(ai.outputs.discoveryUrl, '/')[2] : ''
-var projectConnectionString = empty(hostName)
-  ? aiExistingProjectConnectionString
-  : '${hostName};${subscription().subscriptionId};${rg.name};${projectName}'
+var projectResourceId = !empty(azureExistingAIProjectResourceId)
+  ? azureExistingAIProjectResourceId
+  : ai.outputs.projectResourceId
+
+var projectEndpoint = !empty(azureExistingAIProjectEndpoint)
+  ? azureExistingAIProjectEndpoint
+  : ai.outputs.aiProjectEndpoint
+
 
 var resolvedApplicationInsightsName = !useApplicationInsights || !empty(azureExistingAIProjectResourceId)
   ? ''
@@ -290,16 +294,10 @@ module api 'api.bicep' = {
     embeddingDeploymentDimensions: embeddingDeploymentDimensions
     agentName: agentName
     agentID: agentID
-    projectName: projectName
-  }
-}
-
-module userAcrRolePush 'core/security/role.bicep' = {
-  name: 'user-role-acr-push'
-  scope: rg
-  params: {
-    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
-    roleDefinitionId: '8311e382-0749-4cb8-b61a-304f252e45ec'
+    projectName: aiProjectName
+    enableAzureMonitorTracing: enableAzureMonitorTracing
+    azureTracingGenAIContentRecordingEnabled: azureTracingGenAIContentRecordingEnabled
+    projectEndpoint: projectEndpoint
   }
 }
 
