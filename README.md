@@ -204,39 +204,6 @@ A related option is VS Code Dev Containers, which will open the project in your 
 </details>
 
 <details>
-  <summary><b>React Frontend Development</b></summary>
-
-#### React Frontend Development
-
-This project includes a React frontend application built with Vite. Follow these steps to develop and build the frontend locally:
-
-1. Make sure you have [Node.js](https://nodejs.org/) (v20 or later) installed
-
-2. Navigate to the frontend directory:
-
-    ```shell
-    cd src/frontend
-    ```
-
-3. Setup and build (Only needed the first time. For just building the app, use the command in #4):
-
-    ```shell
-    pnpm run setup
-    ```
-
-4. To just separately build the frontend app:
-
-    ```shell
-    pnpm build
-    ```
-
-   The build output will be placed in the `../api/static/react` directory, where the backend can serve it.
-
-Note: The Docker deployment process automatically builds the frontend during container creation, so you don't need to manually build it before deployment to Azure.
-
-</details>
-
-<details>
   <summary><b>Local Environment</b></summary>
 
 #### Local Environment
@@ -479,4 +446,3 @@ You acknowledge that the Software and Microsoft Products and Services (1) are no
 You acknowledge the Software is not subject to SOC 1 and SOC 2 compliance audits. No Microsoft technology, nor any of its component technologies, including the Software, is intended or made available as a substitute for the professional advice, opinion, or judgement of a certified financial services professional. Do not use the Software to replace, substitute, or provide professional financial advice or judgment.  
 
 BY ACCESSING OR USING THE SOFTWARE, YOU ACKNOWLEDGE THAT THE SOFTWARE IS NOT DESIGNED OR INTENDED TO SUPPORT ANY USE IN WHICH A SERVICE INTERRUPTION, DEFECT, ERROR, OR OTHER FAILURE OF THE SOFTWARE COULD RESULT IN THE DEATH OR SERIOUS BODILY INJURY OF ANY PERSON OR IN PHYSICAL OR ENVIRONMENTAL DAMAGE (COLLECTIVELY, “HIGH-RISK USE”), AND THAT YOU WILL ENSURE THAT, IN THE EVENT OF ANY INTERRUPTION, DEFECT, ERROR, OR OTHER FAILURE OF THE SOFTWARE, THE SAFETY OF PEOPLE, PROPERTY, AND THE ENVIRONMENT ARE NOT REDUCED BELOW A LEVEL THAT IS REASONABLY, APPROPRIATE, AND LEGAL, WHETHER IN GENERAL OR IN A SPECIFIC INDUSTRY. BY ACCESSING THE SOFTWARE, YOU FURTHER ACKNOWLEDGE THAT YOUR HIGH-RISK USE OF THE SOFTWARE IS AT YOUR OWN RISK.
-
