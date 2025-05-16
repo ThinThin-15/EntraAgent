@@ -10,6 +10,9 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  data-path: "${{ github.workspace }}/evals/eval-action-data-path.json"
+
 jobs:
   run-action:
     runs-on: ubuntu-latest
@@ -27,6 +30,7 @@ jobs:
       - name: Run Evaluation
         uses: microsoft/ai-agent-evals@v2-beta
         with:
-          azure-ai-project-endpoint: ${{ vars.AZURE_EXISTING_AI_PROJECT_ENDPOINT || vars.AZURE_AI_PROJECT_ENDPOINT }}
+          azure-ai-project-endpoint: ${{ vars.AZURE_EXISTING_AIPROJECT_ENDPOINT }}
           deployment-name: ${{ vars.AZURE_AI_AGENT_DEPLOYMENT_NAME }}
-          agent-ids: ${{ vars.AZURE_EXISTING_AGENT_ID || vars.AZURE_AI_AGENT_ID }}
+          agent-ids: ${{ vars.AZURE_EXISTING_AGENT_ID }}
+          data-path: ${{ env.data-path }}
