@@ -3,15 +3,10 @@ name: "AI Agent Evaluation"
 on:
   workflow_dispatch:
   push:
-    # branches:
-    #   - main
 
 permissions:
   id-token: write
   contents: read
-
-env:
-  data-path: "${{ github.workspace }}/evals/eval-action-data-path.json"
 
 jobs:
   run-action:
@@ -33,4 +28,4 @@ jobs:
           azure-ai-project-endpoint: ${{ vars.AZURE_EXISTING_AIPROJECT_ENDPOINT }}
           deployment-name: ${{ vars.AZURE_AI_AGENT_DEPLOYMENT_NAME }}
           agent-ids: ${{ vars.AZURE_EXISTING_AGENT_ID }}
-          data-path: ${{ env.data-path }}
+          data-path: ${{ github.workspace }}/evals/eval-action-data-path.json
