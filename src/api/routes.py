@@ -90,9 +90,8 @@ async def get_message_and_annotations(agent_client : AgentsClient, message: Thre
     }
 
 class MyEventHandler(AsyncAgentEventHandler[str]):
-    def __init__(self, request : Request, ai_project: AIProjectClient, app_insights_conn_str: str):
+    def __init__(self, ai_project: AIProjectClient, app_insights_conn_str: str):
         super().__init__()
-        self.request = request
         self.agent_client = ai_project.agents
         self.ai_project = ai_project
         self.app_insights_conn_str = app_insights_conn_str
@@ -177,7 +176,7 @@ async def get_result(
             async with await agent_client.runs.stream(
                 thread_id=thread_id, 
                 agent_id=agent_id,
-                event_handler=MyEventHandler(request, ai_project, app_insight_conn_str),
+                event_handler=MyEventHandler(ai_project, app_insight_conn_str),
             ) as stream:
                 logger.info("Successfully created stream; starting to process events")
                 async for event in stream:
