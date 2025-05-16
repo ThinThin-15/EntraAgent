@@ -3,6 +3,8 @@ name: "AI Agent Evaluation"
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
 
 permissions:
   id-token: write
