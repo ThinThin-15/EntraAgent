@@ -29,7 +29,7 @@ def run_evaluation():
     model_endpoint = f"{parsed_endpoint.scheme}://{parsed_endpoint.netloc}"
     deployment_name = os.getenv("AZURE_AI_AGENT_DEPLOYMENT_NAME")
     agent_name = os.environ.get("AZURE_AI_AGENT_NAME")
-    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
+    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID")
 
     # Initialize the AIProjectClient and related entities
     credential = DefaultAzureCredential()

@@ -7,11 +7,13 @@ import os
 from typing import AsyncGenerator, Optional, Dict
 
 import fastapi
-import logging
 from fastapi import Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
+
+import logging
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from azure.ai.agents.aio import AgentsClient
 from azure.ai.agents.models import (
@@ -35,6 +37,9 @@ logger = logging.getLogger("azureaiapp")
 
 # Set the log level for the azure HTTP logging policy to WARNING (or ERROR)
 logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+
+from opentelemetry import trace
+tracer = trace.get_tracer(__name__)
 
 # Define the directory for your templates.
 directory = os.path.join(os.path.dirname(__file__), "templates")
@@ -62,27 +67,28 @@ def serialize_sse_event(data: Dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
 async def get_message_and_annotations(agent_client : AgentsClient, message: ThreadMessage) -> Dict:
-        annotations = []
-        # Get file annotations for the file search.
-        for annotation in (a.as_dict() for a in message.file_citation_annotations):
-            file_id = annotation["file_citation"]["file_id"]
-            logger.info(f"Fetching file with ID for annotation {file_id}")
-            openai_file = await agent_client.files.get(file_id)
-            annotation["file_name"] = openai_file.filename
-            logger.info(f"File name for annotation: {annotation['file_name']}")
-            annotations.append(annotation)
+    annotations = []
+    # Get file annotations for the file search.
+    for annotation in (a.as_dict() for a in message.file_citation_annotations):
+        file_id = annotation["file_citation"]["file_id"]
+        logger.info(f"Fetching file with ID for annotation {file_id}")
+        openai_file = await agent_client.files.get(file_id)
+        annotation["file_name"] = openai_file.filename
+        logger.info(f"File name for annotation: {annotation['file_name']}")
+        annotations.append(annotation)
 
-        # Get url annotation for the index search.
-        for url_annotation in message.url_citation_annotations:
-            annotation = url_annotation.as_dict()
-            annotation["file_name"] = annotation['url_citation']['title']
-            logger.info(f"File name for annotation: {annotation['file_name']}")
-            annotations.append(annotation)
-                
-        return {
-                'content': message.text_messages[0].text.value,
-                'annotations': annotations
-            }
+    # Get url annotation for the index search.
+    for url_annotation in message.url_citation_annotations:
+        annotation = url_annotation.as_dict()
+        annotation["file_name"] = annotation['url_citation']['title']
+        logger.info(f"File name for annotation: {annotation['file_name']}")
+        annotations.append(annotation)
+            
+    return {
+        'content': message.text_messages[0].text.value,
+        'annotations': annotations
+    }
+
 class MyEventHandler(AsyncAgentEventHandler[str]):
     def __init__(self, request : Request, ai_project: AIProjectClient, app_insights_conn_str: str):
         super().__init__()
@@ -156,31 +162,35 @@ async def index(request: Request):
 
 
 async def get_result(
-    request : Request, 
+    request: Request, 
     thread_id: str, 
     agent_id: str, 
     ai_project: AIProjectClient,
-    app_insight_conn_str: str) -> AsyncGenerator[str, None]:
-    logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
-    try:
-        agent_client = ai_project.agents
-        async with await agent_client.runs.stream(
-            thread_id=thread_id, 
-            agent_id=agent_id,
-            event_handler=MyEventHandler(request, ai_project, app_insight_conn_str),
-        ) as stream:
-            logger.info("Successfully created stream; starting to process events")
-            async for event in stream:
-                _, _, event_func_return_val = event
-                logger.debug(f"Received event: {event}")
-                if event_func_return_val:
-                    logger.info(f"Yielding event: {event_func_return_val}")
-                    yield event_func_return_val
-                else:
-                    logger.debug("Event received but no data to yield")
-    except Exception as e:
-        logger.exception(f"Exception in get_result: {e}")
-        yield serialize_sse_event({'type': "error", 'message': str(e)})
+    app_insight_conn_str: Optional[str], 
+    carrier: Dict[str, str]
+) -> AsyncGenerator[str, None]:
+    ctx = TraceContextTextMapPropagator().extract(carrier=carrier)
+    with tracer.start_as_current_span('get_result', context=ctx):
+        logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
+        try:
+            agent_client = ai_project.agents
+            async with await agent_client.runs.stream(
+                thread_id=thread_id, 
+                agent_id=agent_id,
+                event_handler=MyEventHandler(request, ai_project, app_insight_conn_str),
+            ) as stream:
+                logger.info("Successfully created stream; starting to process events")
+                async for event in stream:
+                    _, _, event_func_return_val = event
+                    logger.debug(f"Received event: {event}")
+                    if event_func_return_val:
+                        logger.info(f"Yielding event: {event_func_return_val}")
+                        yield event_func_return_val
+                    else:
+                        logger.debug("Event received but no data to yield")
+        except Exception as e:
+            logger.exception(f"Exception in get_result: {e}")
+            yield serialize_sse_event({'type': "error", 'message': str(e)})
 
 
 @router.get("/chat/history")
@@ -189,49 +199,49 @@ async def history(
     ai_project : AIProjectClient = Depends(get_ai_project),
     agent : Agent = Depends(get_agent),
 ):
-    # Retrieve the thread ID from the cookies (if available).
-    thread_id = request.cookies.get('thread_id')
-    agent_id = request.cookies.get('agent_id')
+    with tracer.start_as_current_span("chat_history"):
+        # Retrieve the thread ID from the cookies (if available).
+        thread_id = request.cookies.get('thread_id')
+        agent_id = request.cookies.get('agent_id')
 
-    # Attempt to get an existing thread. If not found, create a new one.
-    try:
-        agent_client = ai_project.agents
-        if thread_id and agent_id == agent.id:
-            logger.info(f"Retrieving thread with ID {thread_id}")
-            thread = await agent_client.threads.get(thread_id)
-        else:
-            logger.info("Creating a new thread")
-            thread = await agent_client.threads.create()
-    except Exception as e:
-        logger.error(f"Error handling thread: {e}")
-        raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
+        # Attempt to get an existing thread. If not found, create a new one.
+        try:
+            agent_client = ai_project.agents
+            if thread_id and agent_id == agent.id:
+                logger.info(f"Retrieving thread with ID {thread_id}")
+                thread = await agent_client.threads.get(thread_id)
+            else:
+                logger.info("Creating a new thread")
+                thread = await agent_client.threads.create()
+        except Exception as e:
+            logger.error(f"Error handling thread: {e}")
+            raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
-    thread_id = thread.id
-    agent_id = agent.id
+        thread_id = thread.id
+        agent_id = agent.id
 
-    # Create a new message from the user's input.
-    try:
-        content = []
-        response = agent_client.messages.list(
-            thread_id=thread_id,
-        )
-        async for message in response:
-            formated_message = await get_message_and_annotations(agent_client, message)
-            formated_message['role'] = message.role
-            content.append(formated_message)
-                
-                                        
-        logger.info(f"List message, thread ID: {thread_id}")
-        response = JSONResponse(content=content)
-    
-        # Update cookies to persist the thread and agent IDs.
-        response.set_cookie("thread_id", thread_id)
-        response.set_cookie("agent_id", agent_id)
-        return response
-    except Exception as e:
-        logger.error(f"Error listing message: {e}")
-        raise HTTPException(status_code=500, detail=f"Error list message: {e}")
-
+        # Create a new message from the user's input.
+        try:
+            content = []
+            response = agent_client.messages.list(
+                thread_id=thread_id,
+            )
+            async for message in response:
+                formated_message = await get_message_and_annotations(agent_client, message)
+                formated_message['role'] = message.role
+                content.append(formated_message)
+                    
+                                            
+            logger.info(f"List message, thread ID: {thread_id}")
+            response = JSONResponse(content=content)
+        
+            # Update cookies to persist the thread and agent IDs.
+            response.set_cookie("thread_id", thread_id)
+            response.set_cookie("agent_id", agent_id)
+            return response
+        except Exception as e:
+            logger.error(f"Error listing message: {e}")
+            raise HTTPException(status_code=500, detail=f"Error list message: {e}")
 
 @router.post("/chat")
 async def chat(
@@ -244,58 +254,62 @@ async def chat(
     thread_id = request.cookies.get('thread_id')
     agent_id = request.cookies.get('agent_id')
 
-    # Attempt to get an existing thread. If not found, create a new one.
-    try:
-        agent_client = ai_project.agents
-        if thread_id and agent_id == agent.id:
-            logger.info(f"Retrieving thread with ID {thread_id}")
-            thread = await agent_client.threads.get(thread_id)
-        else:
-            logger.info("Creating a new thread")
-            thread = await agent_client.threads.create()
-    except Exception as e:
-        logger.error(f"Error handling thread: {e}")
-        raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
+    with tracer.start_as_current_span("chat_request"):
+        carrier = {}        
+        TraceContextTextMapPropagator().inject(carrier)
+        
+        # Attempt to get an existing thread. If not found, create a new one.
+        try:
+            agent_client = ai_project.agents
+            if thread_id and agent_id == agent.id:
+                logger.info(f"Retrieving thread with ID {thread_id}")
+                thread = await agent_client.threads.get(thread_id)
+            else:
+                logger.info("Creating a new thread")
+                thread = await agent_client.threads.create()
+        except Exception as e:
+            logger.error(f"Error handling thread: {e}")
+            raise HTTPException(status_code=400, detail=f"Error handling thread: {e}")
 
-    thread_id = thread.id
-    agent_id = agent.id
+        thread_id = thread.id
+        agent_id = agent.id
 
-    # Parse the JSON from the request.
-    try:
-        user_message = await request.json()
-    except Exception as e:
-        logger.error(f"Invalid JSON in request: {e}")
-        raise HTTPException(status_code=400, detail=f"Invalid JSON in request: {e}")
+        # Parse the JSON from the request.
+        try:
+            user_message = await request.json()
+        except Exception as e:
+            logger.error(f"Invalid JSON in request: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON in request: {e}")
 
-    logger.info(f"user_message: {user_message}")
+        logger.info(f"user_message: {user_message}")
 
-    # Create a new message from the user's input.
-    try:
-        message = await agent_client.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=user_message.get('message', '')
-        )
-        logger.info(f"Created message, message ID: {message.id}")
-    except Exception as e:
-        logger.error(f"Error creating message: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating message: {e}")
+        # Create a new message from the user's input.
+        try:
+            message = await agent_client.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=user_message.get('message', '')
+            )
+            logger.info(f"Created message, message ID: {message.id}")
+        except Exception as e:
+            logger.error(f"Error creating message: {e}")
+            raise HTTPException(status_code=500, detail=f"Error creating message: {e}")
 
-    # Set the Server-Sent Events (SSE) response headers.
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "Content-Type": "text/event-stream"
-    }
-    logger.info(f"Starting streaming response for thread ID {thread_id}")
+        # Set the Server-Sent Events (SSE) response headers.
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream"
+        }
+        logger.info(f"Starting streaming response for thread ID {thread_id}")
 
-    # Create the streaming response using the generator.
-    response = StreamingResponse(get_result(request, thread_id, agent_id, ai_project, app_insights_conn_str), headers=headers)
+        # Create the streaming response using the generator.
+        response = StreamingResponse(get_result(request, thread_id, agent_id, ai_project, app_insights_conn_str, carrier), headers=headers)
 
-    # Update cookies to persist the thread and agent IDs.
-    response.set_cookie("thread_id", thread_id)
-    response.set_cookie("agent_id", agent_id)
-    return response
+        # Update cookies to persist the thread and agent IDs.
+        response.set_cookie("thread_id", thread_id)
+        response.set_cookie("agent_id", agent_id)
+        return response
 
 def read_file(path: str) -> str:
     with open(path, 'r') as file:
