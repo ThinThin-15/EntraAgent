@@ -18,9 +18,23 @@ import styles from "./AgentPreview.module.css";
 
 interface IAgent {
   id: string;
+  object: string;
+  created_at: number;
   name: string;
-  description?: string;
-  logo?: string;
+  description?: string | null;
+  model: string;
+  instructions?: string;
+  tools?: Array<{ type: string }>;
+  top_p?: number;
+  temperature?: number;
+  tool_resources?: {
+    file_search?: {
+      vector_store_ids?: string[];
+    };
+    [key: string]: any;
+  };
+  metadata?: Record<string, any>;
+  response_format?: "auto" | string;
 }
 
 interface IAgentPreviewProps {
@@ -410,7 +424,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               <AgentIcon
                 alt=""
                 iconClassName={styles.agentIcon}
-                iconName={agentDetails.logo}
+                iconName={agentDetails.metadata?.logo}
               />
               <Body1 className={styles.agentName}>{agentDetails.name}</Body1>
             </>
@@ -446,7 +460,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
                 <AgentIcon
                   alt=""
                   iconClassName={styles.emptyStateAgentIcon}
-                  iconName={agentDetails.logo}
+                  iconName={agentDetails.metadata?.logo}
                 />
                 <Caption1 className={styles.agentName}>
                   {agentDetails.name}
@@ -456,7 +470,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
             )}
             <AgentPreviewChatBot
               agentName={agentDetails.name}
-              agentLogo={agentDetails.logo}
+              agentLogo={agentDetails.metadata?.logo}
               chatContext={chatContext}
             />
           </>
