@@ -2,14 +2,9 @@
 # Licensed under the MIT license. See LICENSE.md file in the project root for full license information.
 
 import contextlib
-import logging
 import os
-import sys
-import json
-from typing import Dict, Optional
 
 from azure.ai.projects.aio import AIProjectClient
-from azure.ai.agents.models import FilePurpose, FileSearchTool, AsyncToolSet, FileSearchToolResource
 from azure.identity import DefaultAzureCredential
 
 import fastapi
@@ -130,8 +125,8 @@ def create_app():
     
     # Mount React static files
     # Uncomment the following lines if you have a React frontend
-    react_directory = os.path.join(os.path.dirname(__file__), "static/react")
-    app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
+    # react_directory = os.path.join(os.path.dirname(__file__), "static/react")
+    # app.mount("/static/react", StaticFiles(directory=react_directory), name="react")
 
     from . import routes  # Import routes
     app.include_router(routes.router)

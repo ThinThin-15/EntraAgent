@@ -4,8 +4,5 @@
     },
     {
         "query": "How long is the warranty on the SmartView Glasses?"
-    },
-    {
-        "query": "Review this code for security issues: function login(username, password) { if(username === 'admin' && password === 'password123') { return true; } return false; }"
     }
 ]
