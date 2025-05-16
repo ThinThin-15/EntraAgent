@@ -2,14 +2,9 @@
 # Licensed under the MIT license. See LICENSE.md file in the project root for full license information.
 
 import contextlib
-import logging
 import os
-import sys
-import json
-from typing import Dict, Optional
 
 from azure.ai.projects.aio import AIProjectClient
-from azure.ai.agents.models import FilePurpose, FileSearchTool, AsyncToolSet, FileSearchToolResource
 from azure.identity import DefaultAzureCredential
 
 import fastapi
@@ -32,7 +27,8 @@ async def lifespan(app: fastapi.FastAPI):
     try:
         ai_project = AIProjectClient(
             credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
-            endpoint=proj_endpoint
+            endpoint=proj_endpoint,
+            api_version = "2025-05-15-preview" # Evaluations yet not supported on stable (api_version="2025-05-01")
         )
         logger.info("Created AIProjectClient")
 
@@ -50,8 +46,13 @@ async def lifespan(app: fastapi.FastAPI):
             else:
                 from azure.monitor.opentelemetry import configure_azure_monitor
                 configure_azure_monitor(connection_string=application_insights_connection_string)
-                # Do not instrument the code yet, before trace fix is available.
-                #ai_project.telemetry.enable()
+                app.state.application_insights_connection_string = application_insights_connection_string
+                
+                from azure.ai.agents.telemetry import AIAgentsInstrumentor
+                agents_instrumentor = AIAgentsInstrumentor()
+                if not agents_instrumentor.is_instrumented():
+                    agents_instrumentor.instrument()
+                    logger.info("Configured Application Insights for tracing.")
 
         if agent_id:
             try: 
@@ -76,7 +77,7 @@ async def lifespan(app: fastapi.FastAPI):
         if not agent:
             raise RuntimeError("No agent found. Ensure qunicorn.py created one or set AZURE_EXISTING_AGENT_ID.")
 
-        app.state.agent_client = ai_project.agents
+        app.state.ai_project = ai_project
         app.state.agent = agent
         
         yield

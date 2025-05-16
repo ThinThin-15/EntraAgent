@@ -444,6 +444,8 @@ output AZURE_AI_EMBED_DIMENSIONS string = embeddingDeploymentDimensions
 output AZURE_AI_AGENT_NAME string = agentName
 output AZURE_EXISTING_AGENT_ID string = agentID
 output AZURE_EXISTING_AIPROJECT_ENDPOINT string = projectEndpoint
+output ENABLE_AZURE_MONITOR_TRACING bool = enableAzureMonitorTracing
+output AZURE_TRACING_GENAI_CONTENT_RECORDING_ENABLED bool = azureTracingGenAIContentRecordingEnabled
 
 // Outputs required by azd for ACA
 output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environmentName

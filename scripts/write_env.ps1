@@ -17,6 +17,8 @@ $azureAIEmbedDimensions = azd env get-value AZURE_AI_EMBED_DIMENSIONS
 $azureAISearchIndexName = azd env get-value AZURE_AI_SEARCH_INDEX_NAME
 $azureAISearchEndpoint = azd env get-value AZURE_AI_SEARCH_ENDPOINT
 $serviceAPIUri = azd env get-value SERVICE_API_URI
+$enableAzureMonitorTracing = azd env get-value ENABLE_AZURE_MONITOR_TRACING
+$azureTracingGenAIContentRecordingEnabled = azd env get-value AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED
 
 Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_RESOURCE_ID=$aiProjectResourceId"
 Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_ENDPOINT=$aiProjectEndpoint"
@@ -30,6 +32,8 @@ Add-Content -Path $envFilePath -Value "AZURE_AI_SEARCH_INDEX_NAME=$azureAISearch
 Add-Content -Path $envFilePath -Value "AZURE_AI_SEARCH_ENDPOINT=$azureAISearchEndpoint"
 Add-Content -Path $envFilePath -Value "AZURE_AI_AGENT_NAME=$azureAiAgentName"
 Add-Content -Path $envFilePath -Value "AZURE_TENANT_ID=$azureTenantId"
+Add-Content -Path $envFilePath -Value "ENABLE_AZURE_MONITOR_TRACING=$enableAzureMonitorTracing"
+Add-Content -Path $envFilePath -Value "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=$azureTracingGenAIContentRecordingEnabled"
 
 Write-Host "Web app URL:"
 Write-Host $serviceAPIUri -ForegroundColor Cyan
