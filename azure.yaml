@@ -4,7 +4,7 @@
 
 name: azd-get-started-with-ai-agents-golden-path
 metadata:
-  template: azd-get-started-with-ai-agents@0.0.1-beta
+  template: azd-get-started-with-ai-agents@1.0.0
 
 hooks:
   postprovision:
