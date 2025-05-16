@@ -62,6 +62,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
         const json_response: Array<{
           role: string;
           content: string;
+          created_at: string;
           annotations?: any[];
         }> = await response.json();
 
@@ -75,7 +76,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               id: ``,
               content: entry.content,
               role: "user",
-              more: { time: new Date().toISOString() }, // Or use timestamp from history if available
+              more: { time: entry.created_at }, // Or use timestamp from history if available
             });
           } else {
             historyMessages.push({
@@ -83,6 +84,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               content: entry.content,
               role: "assistant", // Assuming 'assistant' role for non-user
               isAnswer: true, // Assuming this property for assistant messages
+              more: { time: entry.created_at }, // Or use timestamp from history if available
               // annotations: entry.annotations, // If you plan to use annotations
             });
           }
@@ -315,7 +317,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   };
 
   const createAssistantMessageDiv: () => IChatItem = () => {
-    var item = { id: "unknown", content: "", isAnswer: true };
+    var item = { id: "unknown", content: "", isAnswer: true, more: { time: new Date().toISOString() } };
     setMessageList((prev) => [...prev, item]);
     return item;
   };

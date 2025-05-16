@@ -190,9 +190,10 @@ async def history(
             thread_id=thread_id,
         )
         async for message in response:
-            formated_message = await get_message_and_annotations(agent_client, message)
-            formated_message['role'] = message.role
-            content.append(formated_message)
+            formatteded_message = await get_message_and_annotations(agent_client, message)
+            formatteded_message['role'] = message.role
+            formatteded_message['created_at'] = message.created_at.astimezone().strftime("%m/%d/%y, %I:%M %p")
+            content.append(formatteded_message)
                 
                                         
         logger.info(f"List message, thread ID: {thread_id}")
