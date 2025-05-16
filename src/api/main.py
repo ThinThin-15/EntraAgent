@@ -28,12 +28,11 @@ async def lifespan(app: fastapi.FastAPI):
     agent = None
 
     proj_endpoint = os.environ.get("AZURE_EXISTING_AIPROJECT_ENDPOINT")
-    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID") if os.environ.get("AZURE_EXISTING_AGENT_ID") else os.environ.get("AZURE_AI_AGENT_ID")
+    agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID")
     try:
         ai_project = AIProjectClient(
             credential=DefaultAzureCredential(exclude_shared_token_cache_credential=True),
-            endpoint=proj_endpoint,
-            api_version = "2025-05-01"            
+            endpoint=proj_endpoint
         )
         logger.info("Created AIProjectClient")
 
