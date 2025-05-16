@@ -206,6 +206,11 @@ async def history(
         logger.error(f"Error listing message: {e}")
         raise HTTPException(status_code=500, detail=f"Error list message: {e}")
 
+@router.get("/agent")
+async def get_chat_agent(
+    request: Request
+):
+    return JSONResponse(content=get_agent(request).as_dict())  
 
 @router.post("/chat")
 async def chat(
