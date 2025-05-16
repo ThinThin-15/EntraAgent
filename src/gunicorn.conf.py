@@ -192,8 +192,7 @@ async def initialize_resources():
                 exclude_shared_token_cache_credential=True) as creds:
             async with AIProjectClient(
                 credential=creds,
-                endpoint=proj_endpoint,
-                api_version = "2025-05-01"                
+                endpoint=proj_endpoint
             ) as ai_client:
                 # If the environment already has AZURE_AI_AGENT_ID or AZURE_EXISTING_AGENT_ID, try
                 # fetching that agent

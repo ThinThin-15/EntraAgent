@@ -219,28 +219,29 @@ async def history(
         thread_id = thread.id
         agent_id = agent.id
 
-        # Create a new message from the user's input.
-        try:
-            content = []
-            response = agent_client.messages.list(
-                thread_id=thread_id,
-            )
-            async for message in response:
-                formated_message = await get_message_and_annotations(agent_client, message)
-                formated_message['role'] = message.role
-                content.append(formated_message)
-                    
-                                            
-            logger.info(f"List message, thread ID: {thread_id}")
-            response = JSONResponse(content=content)
-        
-            # Update cookies to persist the thread and agent IDs.
-            response.set_cookie("thread_id", thread_id)
-            response.set_cookie("agent_id", agent_id)
-            return response
-        except Exception as e:
-            logger.error(f"Error listing message: {e}")
-            raise HTTPException(status_code=500, detail=f"Error list message: {e}")
+    # Create a new message from the user's input.
+    try:
+        content = []
+        response = agent_client.messages.list(
+            thread_id=thread_id,
+        )
+        async for message in response:
+            formatteded_message = await get_message_and_annotations(agent_client, message)
+            formatteded_message['role'] = message.role
+            formatteded_message['created_at'] = message.created_at.astimezone().strftime("%m/%d/%y, %I:%M %p")
+            content.append(formatteded_message)
+                
+                                        
+        logger.info(f"List message, thread ID: {thread_id}")
+        response = JSONResponse(content=content)
+    
+        # Update cookies to persist the thread and agent IDs.
+        response.set_cookie("thread_id", thread_id)
+        response.set_cookie("agent_id", agent_id)
+        return response
+    except Exception as e:
+        logger.error(f"Error listing message: {e}")
+        raise HTTPException(status_code=500, detail=f"Error list message: {e}")
 
 @router.get("/agent")
 async def get_chat_agent(
