@@ -120,7 +120,6 @@ param azureTracingGenAIContentRecordingEnabled bool = false
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
-output EXISTING_NAMING_SUFFIX string = resourceToken
 var tags = { 'azd-env-name': environmentName }
 
 var tempAgentID = !empty(aiAgentID) ? aiAgentID : ''
