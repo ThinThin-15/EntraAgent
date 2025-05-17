@@ -183,7 +183,6 @@ module ai 'core/host/ai-environment.bicep' = if (empty(azureExistingAIProjectRes
   params: {
     location: location
     tags: tags
-
     storageAccountName: !empty(storageAccountName)
       ? storageAccountName
       : '${abbrs.storageStorageAccounts}${resourceToken}'
@@ -195,9 +194,6 @@ module ai 'core/host/ai-environment.bicep' = if (empty(azureExistingAIProjectRes
       ? ''
       : !empty(applicationInsightsName) ? applicationInsightsName : '${abbrs.insightsComponents}${resourceToken}'
     searchServiceName: resolvedSearchServiceName
-    searchConnectionName: !useSearchService
-      ? ''
-      : !empty(searchConnectionName) ? searchConnectionName : 'search-service-connection'
     appInsightConnectionName: 'appinsights-connection'
   }
 }

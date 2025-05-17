@@ -16,8 +16,7 @@ param logAnalyticsName string = ''
 param applicationInsightsName string = ''
 @description('The Azure Search resource name.')
 param searchServiceName string = ''
-@description('The Azure Search connection name.')
-param searchConnectionName string = ''
+@description('The Application Insights connection name.')
 param appInsightConnectionName string
 param tags object = {}
 
@@ -91,6 +90,26 @@ module cognitiveServices '../ai/cognitiveservices.bicep' = {
     appInsightsId: applicationInsights.outputs.id
     appInsightConnectionName: appInsightConnectionName
     appInsightConnectionString: applicationInsights.outputs.connectionString
+    storageAccountId: storageAccount.outputs.id
+    storageAccountConnectionName: storageAccount.outputs.name
+  }
+}
+
+module accountStorageRoleAssignment  '../../core/security/role.bicep' = {
+  name: 'ai-account-role-storage-contributor'
+  params: {
+    principalType: 'ServicePrincipal'
+    principalId: cognitiveServices.outputs.accountPrincipalId
+    roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+  }
+}
+
+module projectStorageRoleAssignment  '../../core/security/role.bicep' = {
+  name: 'ai-project-role-storage-contributor'
+  params: {
+    principalType: 'ServicePrincipal'
+    principalId: cognitiveServices.outputs.projectPrincipalId
+    roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
   }
 }
 
@@ -111,7 +130,6 @@ module searchService '../search/search-services.bicep' =
 
 
 // Outputs
-
 output storageAccountId string = storageAccount.outputs.id
 output storageAccountName string = storageAccount.outputs.name
 
@@ -124,6 +142,7 @@ output aiServiceId string = cognitiveServices.outputs.id
 output aiServicesName string = cognitiveServices.outputs.name
 output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI Language Model Instance API']
 output aiProjectEndpoint string = cognitiveServices.outputs.projectEndpoint
+output aiServicePrincipalId string = cognitiveServices.outputs.accountPrincipalId
 
 output searchServiceId string = !empty(searchServiceName) ? searchService.outputs.id : ''
 output searchServiceName string = !empty(searchServiceName) ? searchService.outputs.name : ''
@@ -131,4 +150,3 @@ output searchServiceEndpoint string = !empty(searchServiceName) ? searchService.
 
 output projectResourceId string = cognitiveServices.outputs.projectResourceId
 output searchConnectionId string = !empty(searchServiceName) ? searchService.outputs.searchConnectionId : ''
-
