@@ -344,9 +344,9 @@ There are multiple ways for you to evaluate the quality of your agents.
   pip install azure-ai-evaluation
   python evals/evaluate.py
   ```
-- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab or run interactive queries on Application Insights logs.
+- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
     ![Tracing](docs/tracing_eval_screenshot.png)
-    Example query:  
+    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see the evaluation results.
     ```kql
     traces | where message  == "gen_ai.evaluation.result"
    ```
