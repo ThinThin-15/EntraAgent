@@ -346,9 +346,15 @@ There are multiple ways for you to evaluate the quality of your agents.
   ```
 - **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
     ![Tracing](docs/tracing_eval_screenshot.png)
-    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see the evaluation results.
+    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see logs on thread runs and related events.
     ```kql
-    traces | where message  == "gen_ai.evaluation.result"
+    let events = traces
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"]);
+    dependencies 
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"])
+    | join kind=leftouter events on thread_run_id
+    | where isnotempty(thread_run_id)
+    | project timestamp, thread_run_id, name, success, duration, event_message = message, event_dimensions=customDimensions1
    ```
 - **CI/CD**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml). It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. For more details, refer to the [documentation](https://github.com/microsoft/ai-agent-evals).
 
