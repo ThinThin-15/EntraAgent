@@ -310,28 +310,26 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
 
 8. (Optional) Follow this [tutorial](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task) to build your changes into a Docker image and deploy to Azure Container App.
 
+
 ## Agent Evaluation
-There are multiple ways for you to evaluation the quality of your agent:
-- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
+There are multiple ways for you to evaluate the quality of your agents.
+- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
   ```shell
     python evals/evaluate.py
   ```
-- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends asynchronous requests to run evaluation on AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab or run interactive queries on Application Insights logs.
-    Example Query in Application Insights:  
+- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends asynchronous evaluation request after processing each thread run on AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab or run interactive queries on Application Insights logs.
+    ![Tracing](docs/tracing_eval_screenshot.png)
+    Example query in Application Insights:  
     ```kql
-    traces 
-    | where message  == "gen_ai.evaluation.result"
-    | extend thread_id = tostring(customDimensions.["gen_ai.thread.id"])
-    | extend evaluator_name = tostring(customDimensions.["gen_ai.evaluator.name"])
-    | extend evaluation_score = tostring(customDimensions.["gen_ai.evaluation.score"])
-    | project timestamp, thread_id, evaluator_name, evaluation_score
+    traces | where message  == "gen_ai.evaluation.result"
    ```
-- **CI/CD**: Check out the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals). It also supports a comparison mode with statistical test, allowing you to iterate agent changes with confidence. To try it:
+- **CI/CD**: Check out the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals). It also supports a comparison mode with statistical test, allowing you to iterate agent changes with confidence. For the setup:
   
   1. Ensure you have a GitHub repository with the necessary permissions to run workflows.
   2. Copy the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml) into the `.github/workflows` directory of your repository.
-  3. Customize the workflow file as needed, such as specifying the evaluation queries or other parameters.
-  4. Commit and push the changes to your repository. The workflow will automatically run based on the triggers defined in the YAML file.
+  3. Set up the required environment variables in your GitHub repository settings (Settings > Secrets and variables > Actions) for authentication and configuration.
+  4. Customize the workflow file as needed, such as specifying the evaluation queries or other parameters.
+  5. Commit and push the changes to your repository. The workflow will automatically run based on the triggers defined in the YAML file.
   
   For more details, refer to the [AI Agent Evaluation GitHub action documentation](https://github.com/microsoft/ai-agent-evals).
 
