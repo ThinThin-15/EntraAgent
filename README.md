@@ -8,7 +8,7 @@ The agent leverages the Azure AI Agent service and utilizes file search for know
 
 <div style="text-align:center;">
 
-[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment)  \| [**RESOURCE CLEAN-UP**](#resource-clean-up)  \| [**TRACING AND MONITORING**](#tracing-and-monitoring)  \| [**GUIDANCE**](#guidance) \| [**TROUBLESHOOTING**](#troubleshooting) 
+[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment) \| [**GUIDANCE**](#guidance) \| [**AGENT EVALUATION**](#ai-evaluation) \| [**RESOURCE CLEAN-UP**](#resource-clean-up) \| [**TROUBLESHOOTING**](#troubleshooting) 
 
 </div>
 
@@ -122,7 +122,20 @@ azd env set AZURE_AI_AGENT_MODEL_NAME <MODEL_NAME>
 azd env set AZURE_AI_AGENT_MODEL_VERSION <MODEL_VERSION>
 ```
 
-#### Logging
+#### Tracing and Monitoring
+To enable tracing for AI Agent to Azure Monitor, set the following environment variable:
+```shell
+azd env set ENABLE_AZURE_MONITOR_TRACING true
+```
+
+To enable message contents to be included in the traces, set the following environment variable. Note that the messages may contain personally identifiable information.
+```shell
+azd env set AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED true
+```
+
+
+
+<!-- 
 To enable logging to a file, navigate to `src/Dockerfile` and edit the code to uncomment the following line:
 
  ```
@@ -133,20 +146,10 @@ To enable logging to a file, navigate to `src/Dockerfile` and edit the code to u
 
  **NOTE!** Any changes to the Dockerfile require a re-deployment in order for the changes to take effect.
 
-The provided file logging implementation is intended for development purposes only, specifically for testing with a single client/worker. It should not be used in production environments after the R&D phase.
+The provided file logging implementation is intended for development purposes only, specifically for testing with a single client/worker. It should not be used in production environments after the R&D phase. -->
 
-#### Tracing to Azure Monitor
-To enable tracing to Azure Monitor, navigate to `src/Dockerfile` and modify the value of `ENABLE_AZURE_MONITOR_TRACING` environment variable to true:
-```
-ENV ENABLE_AZURE_MONITOR_TRACING=true
-```
-Note that the optional App Insights resource is required for tracing to Azure Monitor (it is created by default).
 
-To enable message contents to be included in the traces, set the following environment variable to true in the same `Dockerfile`. Note that the messages may contain personally identifiable information.
 
-```code
-ENV AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=true
-```
 
 #### Quota Recommendations
 
@@ -325,6 +328,9 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
 
 8. (Optional) Follow this [tutorial](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task) to build your changes into a Docker image and deploy to Azure Container App.
 
+## AI Evaluation
+
+
 
 ## Resource Clean-up
 
@@ -346,22 +352,7 @@ To prevent incurring unnecessary charges, it's important to clean up your Azure 
 
 ⚠️ Alternatively, you can delete the resource group directly from the Azure Portal to clean up resources.
 
-## Tracing and Monitoring
 
-You can view console logs in Azure portal. You can get the link to the resource group with the azd tool:
-```shell
-azd show
-```
-
-Or if you want to navigate from the Azure portal main page, select your resource group from the 'Recent' list, or by clicking the 'Resource groups' and searching your resource group there.
-
-After accessing you resource group in Azure portal, choose your container app from the list of resources. Then open 'Monitoring' and 'Log Stream'. Choose the 'Application' radio button to view application logs. You can choose between real-time and historical using the corresponding radio buttons. Note that it may take some time for the historical view to be updated with the latest logs.
-
-If you enabled logging to a file, you can view the log file by choosing 'Console' under the 'Monitoring' (same location as above for the console traces), opening the default console and then for example running the following command (replace app.log with the actual name of your log file):
-
-```shell
-more app.log
-```
 
 You can view the App Insights tracing in Azure AI Foundry. Select your project on the Azure AI Foundry page and then click 'Tracing'.
 
