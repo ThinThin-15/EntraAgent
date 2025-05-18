@@ -49,22 +49,22 @@ interface IAnnotation {
   end_index: number;
 }
 
-// const preprocessContent = (content: string, annotations?: IAnnotation[]): string => {
-//     if (annotations) {
-//         // Process annotations in reverse order so that the indexes remain valid
-//         annotations.slice().reverse().forEach(annotation => {
-//             // If there's a file_name, show it (wrapped in brackets), otherwise fall back to annotation.text.
-//             const linkText = annotation.file_name
-//                 ? `[${annotation.file_name}]`
-//                 : annotation.text;
+const preprocessContent = (content: string, annotations?: IAnnotation[]): string => {
+    if (annotations) {
+        // Process annotations in reverse order so that the indexes remain valid
+        annotations.slice().reverse().forEach(annotation => {
+            // If there's a file_name, show it (wrapped in brackets), otherwise fall back to annotation.text.
+            const linkText = annotation.file_name
+                ? `[${annotation.file_name}]`
+                : annotation.text;
 
-//             content = content.slice(0, annotation.start_index) +
-//                 linkText +
-//                 content.slice(annotation.end_index);
-//         });
-//     }
-//     return content;
-// };
+            content = content.slice(0, annotation.start_index) +
+                linkText +
+                content.slice(annotation.end_index);
+        });
+    }
+    return content;
+};
 
 
 export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
