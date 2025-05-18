@@ -15,7 +15,7 @@ The agent leverages the Azure AI Agent service and utilizes file search for know
 
 ## Solution Overview
 
-This solution deploys a web-based chat application with an AI agent running in Azure Container Apps. 
+This solution deploys a web-based chat application with an AI agent running in Azure Container App. 
 
 This solution creates an Azure AI Foundry project and Azure AI services. More details about the resources can be found in the [resources](#resources) documentation. There are options to enable Retrieval-Augmented Generation (RAG) and use logging, tracing, and monitoring. 
 
@@ -27,7 +27,7 @@ Instructions are provided for deployment through GitHub Codespaces, VS Code Dev 
 
 ![Architecture diagram showing that user input is provided to the Azure Container App, which contains the app code. With user identity and resource access through managed identity, the input is used to form a response. The input and the Azure monitor are able to use the Azure resources deployed in the solution: Application Insights, Azure AI Foundry Project, Azure AI Services, Storage account, Azure Container App, and Log Analytics Workspace.](docs/architecture.png)
 
-The app code runs in Azure Container apps to process the user input and generate a response to the user. It leverages Azure AI projects and Azure AI services, including the model and agent.
+The app code runs in Azure Container App to process the user input and generate a response to the user. It leverages Azure AI projects and Azure AI services, including the model and agent.
 
 
 ### Key Features
@@ -42,9 +42,6 @@ Integrated monitoring capabilities, including Azure Monitor and Application Insi
 
 - **Flexible Deployment Options**<br/>
 The solution supports deployment through GitHub Codespaces, VS Code Dev Containers, or local environments, providing flexibility for different development workflows.
-
-- **Retrieval-Augmented Generation (RAG)**<br/>
-The solution includes an option to enable RAG, combining knowledge retrieval with AI-generated responses to enhance the quality and relevance of outputs.
 
 - **Agent Evaluation**<br/>
 This solution demonstrates how you can evaluate your agent's performance and quality during local development and incorporate it into monitoring and CI/CD workflow.
