@@ -54,7 +54,7 @@ This solution demonstrates how you can evaluate your agent's performance and qua
 
 Here is a screenshot showing the chatting web application with requests and responses between the system and the user:
 
-![Screenshot of chatting web application showing requests and responses between assistants and the user.](docs/webapp_screenshot.png)
+![Screenshot of chatting web application showing requests and responses between agent and the user.](docs/webapp_screenshot.png)
 
 
 ## Getting Started
@@ -420,10 +420,9 @@ The template also includes dependent resources:
 #### Agents
 * If your agent is occasionally unresponsive, your model may have reached its rate limit. You can increase its quota by adjusting the bicep configuration or by editing the model in the Azure AI Foundry page for your project's model deployments. 
 * If your agent is crashing, confirm that you are using a model that you have deployed to your project.
-* For easier agents configuration and streamlined integration with an existing assistants library, export the agent from Azure AI Foundry and implement a yaml-based configuration. 
 * This application is designed to serve multiple users on multiple browsers. This application uses cookies to ensure that the same thread is reused for conversations across multiple tabs in the same browser. If the browser is restarted, the old thread will continue to serve the user. However, if the application has a new agent after a server restart or a thread is deleted, a new thread will be created without requiring a browser refresh or signaling to the users. When users submit a message to the web server, the web server will create an agent, thread, and stream back a reply. The response contains `agent_id` and `thread_id` in cookies. As a result, each subsequent message sent to the web server will also contain these IDs. As long as the same agent is being used in the system and the thread can be retrieved in the cookie, the same thread will be used to serve the users.
 * For document handling, use filename-based downloads to avoid storing files in dictionaries.
-* Intermittent errors may arise when retrieving filenames for file IDs, which may be mitigated by using a single worker and fresh threads for each new assistant.
+* Intermittent errors may arise when retrieving filenames for file IDs, which may be mitigated by using a single worker and fresh threads for each new agent.
 * File citation can be enhanced by automatically including filenames to reduce manual steps. 
 
 
