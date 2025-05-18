@@ -8,7 +8,7 @@ The agent leverages the Azure AI Agent service and utilizes file search for know
 
 <div style="text-align:center;">
 
-[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment)  \| [**RESOURCE CLEAN-UP**](#resource-clean-up)  \| [**TRACING AND MONITORING**](#tracing-and-monitoring)  \| [**GUIDANCE**](#guidance) \| [**TROUBLESHOOTING**](#troubleshooting) 
+[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment) \| [**GUIDANCE**](#guidance) \| [**RESOURCE CLEAN-UP**](#resource-clean-up) \| [**AGENT EVALUATION**](#agent-evaluation) \| [**TROUBLESHOOTING**](#troubleshooting) 
 
 </div>
 
@@ -45,6 +45,9 @@ The solution supports deployment through GitHub Codespaces, VS Code Dev Containe
 
 - **Retrieval-Augmented Generation (RAG)**<br/>
 The solution includes an option to enable RAG, combining knowledge retrieval with AI-generated responses to enhance the quality and relevance of outputs.
+
+- **Agent Evaluation**<br/>
+This solution demonstrates how you can evaluate your agent's performance and quality during local development and incorporate it into monitoring and CI/CD workflow.
 
 <br/>
 
@@ -122,30 +125,15 @@ azd env set AZURE_AI_AGENT_MODEL_NAME <MODEL_NAME>
 azd env set AZURE_AI_AGENT_MODEL_VERSION <MODEL_VERSION>
 ```
 
-#### Logging
-To enable logging to a file, navigate to `src/Dockerfile` and edit the code to uncomment the following line:
-
- ```
- # ENV APP_LOG_FILE=app.log
- ```
-
- By default the file name app.log is used. You can provide your own file name by replacing app.log with the desired log file name.
-
- **NOTE!** Any changes to the Dockerfile require a re-deployment in order for the changes to take effect.
-
-The provided file logging implementation is intended for development purposes only, specifically for testing with a single client/worker. It should not be used in production environments after the R&D phase.
-
-#### Tracing to Azure Monitor
-To enable tracing to Azure Monitor, navigate to `src/Dockerfile` and modify the value of `ENABLE_AZURE_MONITOR_TRACING` environment variable to true:
+#### Tracing and Monitoring
+To enable tracing for AI Agent to Azure Monitor, set the following environment variable:
+```shell
+azd env set ENABLE_AZURE_MONITOR_TRACING true
 ```
-ENV ENABLE_AZURE_MONITOR_TRACING=true
-```
-Note that the optional App Insights resource is required for tracing to Azure Monitor (it is created by default).
 
-To enable message contents to be included in the traces, set the following environment variable to true in the same `Dockerfile`. Note that the messages may contain personally identifiable information.
-
-```code
-ENV AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=true
+To enable message contents to be included in the traces, set the following environment variable. Note that the messages may contain personally identifiable information.
+```shell
+azd env set AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED true
 ```
 
 #### Quota Recommendations
@@ -325,7 +313,6 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
 
 8. (Optional) Follow this [tutorial](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task) to build your changes into a Docker image and deploy to Azure Container App.
 
-
 ## Resource Clean-up
 
 To prevent incurring unnecessary charges, it's important to clean up your Azure resources after completing your work with the application.
@@ -346,24 +333,30 @@ To prevent incurring unnecessary charges, it's important to clean up your Azure 
 
 ⚠️ Alternatively, you can delete the resource group directly from the Azure Portal to clean up resources.
 
-## Tracing and Monitoring
 
-You can view console logs in Azure portal. You can get the link to the resource group with the azd tool:
-```shell
-azd show
-```
-
-Or if you want to navigate from the Azure portal main page, select your resource group from the 'Recent' list, or by clicking the 'Resource groups' and searching your resource group there.
-
-After accessing you resource group in Azure portal, choose your container app from the list of resources. Then open 'Monitoring' and 'Log Stream'. Choose the 'Application' radio button to view application logs. You can choose between real-time and historical using the corresponding radio buttons. Note that it may take some time for the historical view to be updated with the latest logs.
-
-If you enabled logging to a file, you can view the log file by choosing 'Console' under the 'Monitoring' (same location as above for the console traces), opening the default console and then for example running the following command (replace app.log with the actual name of your log file):
-
-```shell
-more app.log
-```
 
 You can view the App Insights tracing in Azure AI Foundry. Select your project on the Azure AI Foundry page and then click 'Tracing'.
+
+## Agent Evaluation
+There are multiple ways for you to evaluate the quality of your agents.
+- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
+  ```shell
+  pip install azure-ai-evaluation
+  python evals/evaluate.py
+  ```
+- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
+    ![Tracing](docs/tracing_eval_screenshot.png)
+    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see logs on thread runs and related events.
+    ```kql
+    let events = traces
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"]);
+    dependencies 
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"])
+    | join kind=leftouter events on thread_run_id
+    | where isnotempty(thread_run_id)
+    | project timestamp, thread_run_id, name, success, duration, event_message = message, event_dimensions=customDimensions1
+   ```
+- **CI/CD**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml). It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. For more details, refer to the [documentation](https://github.com/microsoft/ai-agent-evals).
 
 ## Guidance
 

@@ -10,6 +10,8 @@ param deployments array = []
 param appInsightsId string
 param appInsightConnectionString string
 param appInsightConnectionName string
+param storageAccountId string
+param storageAccountConnectionName string
 
 @allowed([ 'Enabled', 'Disabled' ])
 param publicNetworkAccess string = 'Enabled'
@@ -62,6 +64,22 @@ resource appInsightConnection 'Microsoft.CognitiveServices/accounts/connections@
   }
 }
 
+// Creates the Azure Foundry connection to your Azure Storage resource
+resource storageAccountConnection 'Microsoft.CognitiveServices/accounts/connections@2025-04-01-preview' = {
+  name: storageAccountConnectionName
+  parent: account
+  properties: {
+    category: 'AzureStorageAccount'
+    target: storageAccountId
+    authType: 'AAD'
+    isSharedToAll: true    
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: storageAccountId
+    }
+  }
+}
+
 resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = {
   parent: account
   name: aiProjectName
@@ -100,3 +118,6 @@ output projectResourceId string = aiProject.id
 output projectName string = aiProject.name
 output serviceName string = account.name
 output projectEndpoint string = aiProject.properties.endpoints['AI Foundry API']
+output PrincipalId string = account.identity.principalId
+output accountPrincipalId string = account.identity.principalId
+output projectPrincipalId string = aiProject.identity.principalId
