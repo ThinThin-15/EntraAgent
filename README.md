@@ -122,7 +122,8 @@ azd env set AZURE_AI_AGENT_MODEL_NAME <MODEL_NAME>
 azd env set AZURE_AI_AGENT_MODEL_VERSION <MODEL_VERSION>
 ```
 
-#### Tracing and Monitoring
+#### How to configure tracing and azure monitor
+
 To enable tracing for AI Agent to Azure Monitor, set the following environment variable:
 ```shell
 azd env set ENABLE_AZURE_MONITOR_TRACING true
@@ -132,6 +133,8 @@ To enable message contents to be included in the traces, set the following envir
 ```shell
 azd env set AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED true
 ```
+
+You can view the App Insights tracing in Azure AI Foundry. Select your project on the Azure AI Foundry page and then click 'Tracing'.
 
 #### Quota Recommendations
 
@@ -330,9 +333,6 @@ To prevent incurring unnecessary charges, it's important to clean up your Azure 
 
 ⚠️ Alternatively, you can delete the resource group directly from the Azure Portal to clean up resources.
 
-
-
-You can view the App Insights tracing in Azure AI Foundry. Select your project on the Azure AI Foundry page and then click 'Tracing'.
 
 ## Agent Evaluation
 There are multiple ways for you to evaluate the quality of your agents.
