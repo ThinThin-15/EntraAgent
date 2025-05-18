@@ -42,6 +42,31 @@ interface IAgentPreviewProps {
   agentDetails: IAgent;
 }
 
+interface IAnnotation {
+  file_name?: string;
+  text: string;
+  start_index: number;
+  end_index: number;
+}
+
+// const preprocessContent = (content: string, annotations?: IAnnotation[]): string => {
+//     if (annotations) {
+//         // Process annotations in reverse order so that the indexes remain valid
+//         annotations.slice().reverse().forEach(annotation => {
+//             // If there's a file_name, show it (wrapped in brackets), otherwise fall back to annotation.text.
+//             const linkText = annotation.file_name
+//                 ? `[${annotation.file_name}]`
+//                 : annotation.text;
+
+//             content = content.slice(0, annotation.start_index) +
+//                 linkText +
+//                 content.slice(annotation.end_index);
+//         });
+//     }
+//     return content;
+// };
+
+
 export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const [messageList, setMessageList] = useState<IChatItem[]>([]);
@@ -63,7 +88,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
           role: string;
           content: string;
           created_at: string;
-          annotations?: any[];
+          annotations?: IAnnotation[];
         }> = await response.json();
 
         // It's generally better to build the new list and set state once
@@ -81,7 +106,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
           } else {
             historyMessages.push({
               id: `assistant-hist-${Date.now()}-${Math.random()}`, // Ensure unique ID
-              content: entry.content,
+              content: preprocessContent(entry.content, entry.annotations),
               role: "assistant", // Assuming 'assistant' role for non-user
               isAnswer: true, // Assuming this property for assistant messages
               more: { time: entry.created_at }, // Or use timestamp from history if available
@@ -189,10 +214,6 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       } else {
         console.error("[ChatClient] Fetch failed:", error);
       }
-    } finally {
-      // Reset the controller once the request is finished or cancelled
-      //TODO
-      // this.abortController = null;
     }
   };
 
@@ -203,6 +224,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
     let accumulatedContent = "";
     let isStreaming = true;
     let buffer = "";
+    let annotations: IAnnotation[] = [];
 
     // Create a reader for the SSE stream
     const reader = stream.getReader();
@@ -283,6 +305,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               if (data.type === "completed_message") {
                 clearAssistantMessage(chatItem);
                 accumulatedContent = data.content;
+                annotations = data.annotations;
                 isStreaming = false;
                 console.log(
                   "[ChatClient] Received completed message:",
@@ -301,7 +324,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               }
 
               // Update the UI with the accumulated content
-              appendAssistantMessage(chatItem, accumulatedContent, isStreaming);
+              appendAssistantMessage(chatItem, accumulatedContent, isStreaming, annotations);
             }
           }
 
@@ -325,12 +348,12 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   const appendAssistantMessage = (
     chatItem: IChatItem,
     accumulatedContent: string,
-    isStreaming: boolean
+    isStreaming: boolean,
+    annotations?: IAnnotation[]
   ) => {
     try {
       // Preprocess content to convert citations to links using the updated annotation data
-      const preprocessedContent = accumulatedContent;
-      // Convert the accumulated content to HTML using markdown-it
+      const preprocessedContent = preprocessContent(accumulatedContent, annotations);      // Convert the accumulated content to HTML using markdown-it
       let htmlContent = preprocessedContent;
       if (!chatItem) {
         throw new Error("Message content div not found in the template.");
@@ -351,7 +374,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       if (!isStreaming) {
         requestAnimationFrame(() => {
           // TODO
-          // this.scrollToBottom();
+          // scrollToBottom();
         });
       }
     } catch (error) {
