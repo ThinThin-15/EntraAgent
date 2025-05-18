@@ -8,7 +8,7 @@ The agent leverages the Azure AI Agent service and utilizes file search for know
 
 <div style="text-align:center;">
 
-[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment) \| [**GUIDANCE**](#guidance) \| [**RESOURCE CLEAN-UP**](#resource-clean-up) \| [**AGENT EVALUATION**](#agent-evaluation) \| [**TROUBLESHOOTING**](#troubleshooting) 
+[**SOLUTION OVERVIEW**](#solution-overview) \| [**GETTING STARTED**](#getting-started) \| [**CONFIGURE YOUR ENVIRONMENT**](#configure-your-environment)  \| [**DEPLOYMENT**](#deployment) \| [**GUIDANCE**](#guidance) \| [**RESOURCE CLEAN-UP**](#resource-clean-up) \| [**TRACING AND MONITORING**](#tracing-and-monitoring) \| [**AGENT EVALUATION**](#agent-evaluation) \| [**TROUBLESHOOTING**](#troubleshooting) 
 
 </div>
 
@@ -31,7 +31,7 @@ The app code runs in Azure Container App to process the user input and generate 
 
 
 ### Key Features
-- **Agent-Based Knowledge Retrieval**<br/>
+- **Knowledge Retrieval**<br/>
 The AI agent uses file search to retrieve knowledge from uploaded files.
 
 - **Customizable AI Model Deployment**<br/>
@@ -313,6 +313,42 @@ Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Co
 
 8. (Optional) Follow this [tutorial](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tutorial-quick-task) to build your changes into a Docker image and deploy to Azure Container App.
 
+## Tracing and Monitoring
+
+You can view console logs in Azure portal. You can get the link to the resource group with the azd tool:
+```shell
+azd show
+```
+
+Or if you want to navigate from the Azure portal main page, select your resource group from the 'Recent' list, or by clicking the 'Resource groups' and searching your resource group there.
+
+After accessing you resource group in Azure portal, choose your container app from the list of resources. Then open 'Monitoring' and 'Log Stream'. Choose the 'Application' radio button to view application logs. You can choose between real-time and historical using the corresponding radio buttons. Note that it may take some time for the historical view to be updated with the latest logs.
+
+You can view the App Insights tracing in Azure AI Foundry. Select your project on the Azure AI Foundry page and then click 'Tracing'.
+
+
+## Agent Evaluation
+There are multiple ways for you to evaluate the quality of your agents.
+- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
+  ```shell
+  python -m pip install -r requirements.txt
+  pip install azure-ai-evaluation
+  python evals/evaluate.py
+  ```
+- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
+    ![Tracing](docs/tracing_eval_screenshot.png)
+    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see logs on thread runs and related events.
+    ```kql
+    let events = traces
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"]);
+    dependencies 
+    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"])
+    | join kind=leftouter events on thread_run_id
+    | where isnotempty(thread_run_id)
+    | project timestamp, thread_run_id, name, success, duration, event_message = message, event_dimensions=customDimensions1
+   ```
+- **CI/CD**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml). It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. For more details, refer to the [documentation](https://github.com/microsoft/ai-agent-evals).
+
 ## Resource Clean-up
 
 To prevent incurring unnecessary charges, it's important to clean up your Azure resources after completing your work with the application.
@@ -333,27 +369,6 @@ To prevent incurring unnecessary charges, it's important to clean up your Azure 
 
 ⚠️ Alternatively, you can delete the resource group directly from the Azure Portal to clean up resources.
 
-
-## Agent Evaluation
-There are multiple ways for you to evaluate the quality of your agents.
-- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
-  ```shell
-  pip install azure-ai-evaluation
-  python evals/evaluate.py
-  ```
-- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
-    ![Tracing](docs/tracing_eval_screenshot.png)
-    Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see logs on thread runs and related events.
-    ```kql
-    let events = traces
-    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"]);
-    dependencies 
-    | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"])
-    | join kind=leftouter events on thread_run_id
-    | where isnotempty(thread_run_id)
-    | project timestamp, thread_run_id, name, success, duration, event_message = message, event_dimensions=customDimensions1
-   ```
-- **CI/CD**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml). It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. For more details, refer to the [documentation](https://github.com/microsoft/ai-agent-evals).
 
 ## Guidance
 
