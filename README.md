@@ -328,26 +328,29 @@ You can view the App Insights tracing in Azure AI Foundry. Select your project o
 
 
 ## Agent Evaluation
-There are multiple ways for you to evaluate the quality of your agents.
-- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json) with built-in evaluators.
+AI Foundry offers a number of [built-in evaluators](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk) to measure the quality, efficiency, risk and safety of your agents. For example, intent resolution, tool call accuracy, and task adherence evaluators are targeted to assess the performance of agent workflow, while content safety evaluator checks for inappropriate content in the responses such as violence or hate.
+
+ In this template, we show how these evaluations can be performed during different phases of your development cycle.
+- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json).
   ```shell
-  python -m pip install -r requirements.txt
-  pip install azure-ai-evaluation
+  python -m pip install -r src/requirements.txt
+  python -m pip install azure-ai-evaluation
+
   python evals/evaluate.py
   ```
-- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing run to AI Foundry, allowing continuous monitoring of your agent quality. You can view results from AI Foundry Tracing tab.
+- **Monitoring**: When tracing is enabled, the [application code](./src/api/routes.py) sends an asynchronous evaluation request after processing a thread run, allowing continuous monitoring of your agent. You can view results from the AI Foundry Tracing tab.
     ![Tracing](docs/tracing_eval_screenshot.png)
     Alternatively, you can go to your Application Insights logs for an interactive experience. Here is an example query to see logs on thread runs and related events.
     ```kql
-    let events = traces
+    let thread_run_events = traces
     | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"]);
     dependencies 
     | extend thread_run_id = tostring(customDimensions.["gen_ai.thread.run.id"])
-    | join kind=leftouter events on thread_run_id
+    | join kind=leftouter thread_run_events on thread_run_id
     | where isnotempty(thread_run_id)
     | project timestamp, thread_run_id, name, success, duration, event_message = message, event_dimensions=customDimensions1
    ```
-- **CI/CD**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml). It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. For more details, refer to the [documentation](https://github.com/microsoft/ai-agent-evals).
+- **Continuous Integration**: You can try the [AI Agent Evaluation GitHub action](https://github.com/microsoft/ai-agent-evals) using the [sample GitHub workflow](./.github/workflows/ai-evaluation.yaml) in your CI/CD pipeline. This GitHub action runs a set of queries against your agent, performs evaluations with evaluators of your choice, and produce a summary report. It also supports a comparison mode with statistical test, allowing you to iterate agent changes on your production environment with confidence. See [documentation](https://github.com/microsoft/ai-agent-evals) for more details.
 
 ## Resource Clean-up
 
