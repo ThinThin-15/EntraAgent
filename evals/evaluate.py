@@ -33,19 +33,20 @@ def run_evaluation():
     agent_name = os.environ.get("AZURE_AI_AGENT_NAME")
     agent_id = os.environ.get("AZURE_EXISTING_AGENT_ID")
 
-    # Initialize the AIProjectClient and related entities
+    # Validate required environment variables
+    if not project_endpoint:
+        raise ValueError("Please set the AZURE_EXISTING_AIPROJECT_ENDPOINT environment variable.")
+
+    if not agent_id and not agent_name:
+        raise ValueError("Please set either AZURE_EXISTING_AGENT_ID or AZURE_AI_AGENT_NAME environment variable.")
+
+    # Initialize the AIProjectClient
     credential = DefaultAzureCredential()
     ai_project = AIProjectClient(
         credential=credential,
         endpoint=project_endpoint,
         api_version = "2025-05-15-preview" # Evaluations yet not supported on stable (api_version="2025-05-01")
     )
-    model_config = {
-        "azure_deployment": deployment_name,
-        "azure_endpoint": model_endpoint,
-        "api_version": "",
-    }
-    thread_data_converter = AIAgentConverter(ai_project)
 
     # Look up the agent by name if agent Id is not provided
     if not agent_id and agent_name:
@@ -56,14 +57,26 @@ def run_evaluation():
                 
     if not agent_id:
         raise ValueError("Agent ID not found. Please provide a valid agent ID or name.") 
-    
-    agent = ai_project.agents.get_agent(agent_id)
 
-    # Read data input file 
+    agent = ai_project.agents.get_agent(agent_id)
+    
+    # Use model from agent if not provided    
+    if not deployment_name:        
+        deployment_name = agent.model
+
+    # Setup required evaluation config
+    model_config = {
+        "azure_deployment": deployment_name,
+        "azure_endpoint": model_endpoint,
+        "api_version": "",
+    }
+    thread_data_converter = AIAgentConverter(ai_project)
+
+    # Read test queries from input file 
     with open(eval_queries_path, "r", encoding="utf-8") as f:
         test_data = json.load(f)
     
-    # Execute the test data against the agent and prepare the evaluation input
+    # Execute the test queries against the agent and prepare the evaluation input
     with open(eval_input_path, "w", encoding="utf-8") as f:        
 
         for row in test_data:
@@ -85,7 +98,7 @@ def run_evaluation():
             if run.status != RunStatus.COMPLETED:
                 raise ValueError(run.last_error or "Run failed to complete")
 
-            metrics = {
+            operational_metrics = {
                 "server-run-duration-in-seconds": (
                     run.completed_at - run.created_at
                 ).total_seconds(),
@@ -97,15 +110,14 @@ def run_evaluation():
 
             # Add thread data + operational metrics to the evaluation input
             evaluation_data = thread_data_converter.prepare_evaluation_data(thread_ids=thread.id)
-
             eval_item = evaluation_data[0]
-            eval_item["metrics"] = metrics
+            eval_item["metrics"] = operational_metrics
             f.write(json.dumps(eval_item) + "\n")   
         
 
     # Now, run a sample set of evaluators using the evaluation input
     # See https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk
-    # for the full list of evaluators availalbe
+    # for the full list of evaluators available.
     results = evaluate(
         evaluation_name="evaluation-test",
         data=eval_input_path,
@@ -122,10 +134,9 @@ def run_evaluation():
         azure_ai_project=project_endpoint, # if you want results uploaded to AI Foundry
     )
 
-    # Print the evaluation results
+    # Format and print the evaluation results
     print_eval_results(results, eval_input_path, eval_output_path)
-    
-    return results
+
 
 class OperationalMetricsEvaluator:
     """Propagate operational metrics to the final evaluation results"""
