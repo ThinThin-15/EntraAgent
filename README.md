@@ -351,6 +351,7 @@ AI Foundry offers a number of [built-in evaluators](https://learn.microsoft.com/
 
   ```shell
   python -m pip install -r src/requirements.txt
+  python -m pip install azure-ai-evaluation
 
   python evals/evaluate.py
   ```
@@ -381,6 +382,7 @@ To install required extra package from Azure AI Evaluation SDK and run the scrip
 
 ```shell
 python -m pip install -r src/requirements.txt
+python -m pip install azure-ai-evaluation[redteam]
 
 python evals/airedteaming.py
 ```

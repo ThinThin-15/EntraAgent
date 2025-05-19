@@ -12,5 +12,4 @@ azure-core-tracing-opentelemetry
 azure-monitor-opentelemetry
 azure-search-documents
 opentelemetry-sdk
-azure-ai-evaluation[redteam]
 
