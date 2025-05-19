@@ -331,7 +331,14 @@ You can view the App Insights tracing in Azure AI Foundry. Select your project o
 AI Foundry offers a number of [built-in evaluators](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk) to measure the quality, efficiency, risk and safety of your agents. For example, intent resolution, tool call accuracy, and task adherence evaluators are targeted to assess the performance of agent workflow, while content safety evaluator checks for inappropriate content in the responses such as violence or hate.
 
  In this template, we show how these evaluations can be performed during different phases of your development cycle.
-- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to see performance and evaluation metrics based on a set of [queries](./evals/eval-queries.json).
+- **Local development**: You can use this [local evaluation script](./evals/evaluate.py) to get performance and evaluation metrics based on a set of [test queries](./evals/eval-queries.json) for a sample set of built-in evaluators. 
+
+  The script reads the following environment variables: 
+    - `AZURE_EXISTING_AIPROJECT_ENDPOINT`: AI Project endpoint 
+    - `AZURE_EXISTING_AGENT_ID`: AI Agent Id, with fallback logic to look up agent Id by name `AZURE_AI_AGENT_NAME`
+    - `AZURE_AI_AGENT_DEPLOYMENT_NAME`: Deployment model used by the AI-assisted evaluators, with fallback logic to your agent model
+  
+  To install required packages and run the script:  
   ```shell
   python -m pip install -r src/requirements.txt
   python -m pip install azure-ai-evaluation
