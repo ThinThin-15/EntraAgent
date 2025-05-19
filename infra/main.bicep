@@ -245,6 +245,7 @@ module userRoleAzureAIDeveloperBackendExistingProjectRG 'core/security/role.bice
   name: 'backend-role-azureai-developer-existing-project-rg'
   scope: existingProjectRG
   params: {
+    principalType: 'ServicePrincipal'
     principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
     roleDefinitionId: '64702f94-c441-49e6-a78b-ef80e0188fee' 
   }
