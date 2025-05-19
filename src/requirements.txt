@@ -9,7 +9,7 @@ azure_ai_projects==1.0.0b11
 
 azure-core==1.31.0  # other versions might not compatible
 azure-core-tracing-opentelemetry
-azure-monitor-opentelemetry
+azure-monitor-opentelemetry>=1.6.9
 azure-search-documents
 opentelemetry-sdk
 

@@ -47,12 +47,7 @@ async def lifespan(app: fastapi.FastAPI):
                 from azure.monitor.opentelemetry import configure_azure_monitor
                 configure_azure_monitor(connection_string=application_insights_connection_string)
                 app.state.application_insights_connection_string = application_insights_connection_string
-                
-                from azure.ai.agents.telemetry import AIAgentsInstrumentor
-                agents_instrumentor = AIAgentsInstrumentor()
-                if not agents_instrumentor.is_instrumented():
-                    agents_instrumentor.instrument()
-                    logger.info("Configured Application Insights for tracing.")
+                logger.info("Configured Application Insights for tracing.")
 
         if agent_id:
             try: 
