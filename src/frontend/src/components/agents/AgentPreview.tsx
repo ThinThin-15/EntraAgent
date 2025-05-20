@@ -98,7 +98,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
         for (const entry of reversedResponse) {
           if (entry.role === "user") {
             historyMessages.push({
-              id: ``,
+              id: crypto.randomUUID(),
               content: entry.content,
               role: "user",
               more: { time: entry.created_at }, // Or use timestamp from history if available
@@ -173,6 +173,8 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       const postData = { message: message };
       // IMPORTANT: Add credentials: 'include' if server cookies are critical
       // and if your backend is on the same domain or properly configured for cross-site cookies.
+
+      setIsResponding(true);      
       const response = await fetch("/chat", {
         method: "POST",
         headers: {
@@ -229,7 +231,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
     // Create a reader for the SSE stream
     const reader = stream.getReader();
     const decoder = new TextDecoder();
-
+    
     const readStream = async () => {
       while (true) {
         const { done, value } = await reader.read();
@@ -295,7 +297,6 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
             } else {
               // If we have no messageDiv yet, create one
               if (!chatItem) {
-                // TODO
                 chatItem = createAssistantMessageDiv();
                 console.log(
                   "[ChatClient] Created new messageDiv for assistant."
@@ -312,8 +313,6 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
                   accumulatedContent
                 );
 
-                // TODO: Hide spinner
-                // document.getElementById("generating-message").style.display = "none";
                 setIsResponding(false);
               } else {
                 accumulatedContent += data.content;
@@ -340,11 +339,10 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   };
 
   const createAssistantMessageDiv: () => IChatItem = () => {
-    var item = { id: "unknown", content: "", isAnswer: true, more: { time: new Date().toISOString() } };
+    var item = { id: crypto.randomUUID(), content: "", isAnswer: true, more: { time: new Date().toISOString() } };
     setMessageList((prev) => [...prev, item]);
     return item;
   };
-
   const appendAssistantMessage = (
     chatItem: IChatItem,
     accumulatedContent: string,
@@ -362,20 +360,18 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       // Set the innerHTML of the message text div to the HTML content
       chatItem.content = htmlContent;
       setMessageList((prev) => {
-        const before = prev;
-        console.log("[ChatClient] Message list before update:", before);
-        const after = [...prev.slice(0, -1), { ...chatItem }]; // Update the last message in the list
-        console.log("[ChatClient] Message list after update:", after);
-        return after;
+        return [...prev.slice(0, -1), { ...chatItem }];
       });
 
       // Use requestAnimationFrame to ensure the DOM has updated before scrolling
       // Only scroll if stop streaming
       if (!isStreaming) {
         requestAnimationFrame(() => {
-          // TODO
-          // scrollToBottom();
-        });
+          const lastChild = document.getElementById(`msg-${chatItem.id}`);
+          if (lastChild) {
+            lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
+          }
+       });
       }
     } catch (error) {
       console.error("Error in appendAssistantMessage:", error);

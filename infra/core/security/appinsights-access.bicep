@@ -22,6 +22,7 @@ resource monitoringMetricsContributorRoleAssignment 'Microsoft.Authorization/rol
   scope: appInsights // Use when specifying a scope that is different than the deployment scope
   name: guid(subscription().id, resourceGroup().id, principalId, monitoringMetricsContributorRole)
   properties: {
+    principalType: principalType
     roleDefinitionId: monitoringMetricsContributorRole
     principalId: principalId
   }
