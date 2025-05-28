@@ -12,6 +12,8 @@ The agent leverages the Azure AI Agent service and utilizes file search for know
 
 This solution deploys a web-based chat application with an AI agent running in Azure Container App.
 
+The agent leverages the Azure AI Agent service and utilizes Azure AI Search for knowledge retrieval from uploaded files, enabling it to generate responses with citations. The solution also includes built-in monitoring capabilities with tracing to ensure easier troubleshooting and optimized performance.
+
 This solution creates an Azure AI Foundry project and Azure AI services. More details about the resources can be found in the [resources](#resources) documentation. There are options to enable logging, tracing, and monitoring.
 
 Instructions are provided for deployment through GitHub Codespaces, VS Code Dev Containers, and your local development environment.
@@ -107,12 +109,15 @@ When you start a deployment, most parameters will have default values. You can c
 | **Model** | Choose from the [list of models supported by Azure AI Agent Service](https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support) for your selected region. | gpt-4o-mini |  
 | **Model Format** | Choose from OpenAI or Microsoft, depending on your model. | OpenAI |  
 | **Model Deployment Capacity** | Configure capacity for your model. Recommended value is 100k. | 30k |
+| **Embedding Model** | Choose from text-embedding-3-large, text-embedding-3-small, and text-embedding-ada-002. This may only be deployed if Azure AI Search is enabled. |  text-embedding-3-small |
+| **Embedding Model Capacity** | Configure capacity for your embedding model. |  30k |
+| **Knowledge Retrieval** | Choose from OpenAI's file search or including Azure AI Search Index. |  OpenAI's file search |
 
 For a detailed description of customizable fields and instructions, view the [deployment customization guide](docs/deploy_customization.md).
 
-#### How to configure Agent model and version
-
-By default, the template uses model `gpt-4o-mini`, version `2024-07-18` for text generation. If you want to personalize your agent, you can change the default configuration for your agent. Additional details on changing your agent can be found in [customizing model deployments](docs/deploy_customization.md#customizing-model-deployments). For more information on the Azure OpenAI models and non-Microsoft models that can be used in your deployment, view the [list of models supported by Azure AI Agent Service](https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support).
+#### How to configure Agent knowledge retrieval
+By default, the template deploys OpenAI's [file search](https://learn.microsoft.com/azure/ai-services/agents/how-to/tools/file-search?tabs=python&pivots=overview) for agent's knowledge retrieval. An agent also can perform search using the search index, deployed in Azure AI Search resource. The semantic index search represents so-called hybrid search i.e. it uses LLM to search for the relevant context in the provided index as well as embedding similarity search. This index is built from the `embeddings.csv` file, containing the embeddings vectors, followed by the contexts.
+To use index search, please set the local environment variable `USE_AZURE_AI_SEARCH_SERVICE` to `true` during the `azd up` command. In this case the Azure AI Search resource will be deployed and used. For more information on Azure AI serach, please see the [Azure AI Search Setup Guide](docs/ai_search.md)
 
 To specify the model (e.g. gpt-4o-mini, gpt-4o) that is deployed for the agent when `azd up` is called, set the following environment variables:
 
@@ -143,7 +148,7 @@ The default for the model capacity in deployment is 30k tokens. For optimal perf
 
 - Navigate to the home screen of the [Azure AI Foundry Portal](https://ai.azure.com/)
 - Select Quota Management buttom at the bottom of the home screen
-- In the Quota tab, click the GlobalStandard dropdown and select the model and region you are using for this accelerator to see your available quota. Please note gpt-4o-mini is used as default.
+* In the Quota tab, click the GlobalStandard dropdown and select the model and region you are using for this accelerator to see your available quota. Please note gpt-4o-mini and text-embedding-3-small are used as default.
 - Request more quota or delete any unused model deployments as needed.
 
 ## Deployment
@@ -450,7 +455,8 @@ This template creates everything you need to get started with Azure AI Foundry:
 
 - [AI Project](https://learn.microsoft.com/azure/ai-studio/how-to/create-projects)
 - [Azure AI Service](https://learn.microsoft.com/azure/ai-services): Default models deployed are gpt-4o-mini, but any Azure AI models can be specified per the [documentation](docs/deploy_customization.md#customizing-model-deployments).
-
+* [AI Search Service](https://learn.microsoft.com/azure/search/) *(Optional, disabled by default)*
+* 
 The template also includes dependent resources:
 
 - [Storage Account](https://learn.microsoft.com/azure/storage/blobs/)

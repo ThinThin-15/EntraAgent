@@ -19,7 +19,7 @@ param searchServiceName string = ''
 @description('The Application Insights connection name.')
 param appInsightConnectionName string
 param tags object = {}
-
+param aoaiConnectionName string
 module storageAccount '../storage/storage-account.bicep' = {
   name: 'storageAccount'
   params: {
@@ -92,6 +92,7 @@ module cognitiveServices '../ai/cognitiveservices.bicep' = {
     appInsightConnectionString: applicationInsights.outputs.connectionString
     storageAccountId: storageAccount.outputs.id
     storageAccountConnectionName: storageAccount.outputs.name
+    aoaiConnectionName: aoaiConnectionName
   }
 }
 
@@ -140,7 +141,6 @@ output logAnalyticsWorkspaceName string = !empty(logAnalyticsName) ? logAnalytic
 
 output aiServiceId string = cognitiveServices.outputs.id
 output aiServicesName string = cognitiveServices.outputs.name
-output aiServiceEndpoint string = cognitiveServices.outputs.endpoints['OpenAI Language Model Instance API']
 output aiProjectEndpoint string = cognitiveServices.outputs.projectEndpoint
 output aiServicePrincipalId string = cognitiveServices.outputs.accountPrincipalId
 

@@ -65,14 +65,17 @@ async def create_index_maybe(
     """
     from api.search_index_manager import SearchIndexManager
     endpoint = os.environ.get('AZURE_AI_SEARCH_ENDPOINT')
-    embedding = os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME')
+    embedding = os.getenv('AZURE_AI_EMBED_DEPLOYMENT_NAME')    
     if endpoint and embedding:
-        aoai_connection = await ai_client.connections.get(
-            connection_type=ConnectionType.AZURE_OPEN_AI,
-            include_credentials=True)
-        if aoai_connection is None or aoai_connection.key is None:
+        try:
+            aoai_connection = await ai_client.connections.get_default(
+                connection_type=ConnectionType.AZURE_OPEN_AI, include_credentials=True)
+        except ValueError as e:
+            logger.error("Error creating index: {e}")
+            return
+        if aoai_connection.credentials is None or aoai_connection.credentials.api_key is None: 
             err = "Error getting the connection to Azure Open AI service. {}"
-            if aoai_connection is not None and aoai_connection.key is None:
+            if aoai_connection is not None and (aoai_connection.key is None or  aoai_connection.credentials.api_key is None):
                 logger.error(
                     err.format(
                         "Please configure "
@@ -81,6 +84,7 @@ async def create_index_maybe(
                 logger.error(
                     err.format("Azure Open AI service connection is absent."))
             return
+        
         search_mgr = SearchIndexManager(
             endpoint=endpoint,
             credential=creds,
@@ -88,8 +92,8 @@ async def create_index_maybe(
             dimensions=None,
             model=embedding,
             deployment_name=embedding,
-            embedding_endpoint=aoai_connection.endpoint_url,
-            embed_api_key=aoai_connection.key
+            embedding_endpoint=aoai_connection.target,
+            embed_api_key=aoai_connection.credentials.api_key
         )
         # If another application instance already have created the index,
         # do not upload the documents.
@@ -132,11 +136,10 @@ async def get_available_toolset(
     conn_id = ""
     if os.environ.get('AZURE_AI_SEARCH_INDEX_NAME'):
         conn_list = project_client.connections.list()
-        # TODO: uncomment this when we can official support AI Search
-        # async for conn in conn_list:
-        #     if conn.type == ConnectionType.AZURE_AI_SEARCH:
-        #         conn_id = conn.id
-        #         break
+        async for conn in conn_list:
+            if conn.type == ConnectionType.AZURE_AI_SEARCH:
+                conn_id = conn.id
+                break
 
     toolset = AsyncToolSet()
     if conn_id:

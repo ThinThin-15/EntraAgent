@@ -53,21 +53,16 @@ resource search 'Microsoft.Search/searchServices@2024-06-01-preview' = {
   }
   identity: searchIdentityProvider  
   properties: {
-    replicaCount: 1
-    partitionCount: 1
-    hostingMode: 'default'
-    publicNetworkAccess: 'enabled'
-    networkRuleSet: {
-      ipRules: []
-    }
-    encryptionWithCmk: {
-      enforcement: 'Unspecified'
-    }
-    disableLocalAuth: false
-    authOptions: {
-      apiKeyOnly: {}
-    }
-    semanticSearch: 'free'
+    authOptions: authOptions
+    disableLocalAuth: disableLocalAuth
+    disabledDataExfiltrationOptions: disabledDataExfiltrationOptions
+    encryptionWithCmk: encryptionWithCmk
+    hostingMode: hostingMode
+    networkRuleSet: networkRuleSet
+    partitionCount: partitionCount
+    publicNetworkAccess: publicNetworkAccess
+    replicaCount: replicaCount
+    semanticSearch: semanticSearch
   }
 }
 

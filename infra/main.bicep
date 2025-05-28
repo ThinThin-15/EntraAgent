@@ -195,6 +195,7 @@ module ai 'core/host/ai-environment.bicep' = if (empty(azureExistingAIProjectRes
       : !empty(applicationInsightsName) ? applicationInsightsName : '${abbrs.insightsComponents}${resourceToken}'
     searchServiceName: resolvedSearchServiceName
     appInsightConnectionName: 'appinsights-connection'
+    aoaiConnectionName: 'aoai-connection'
   }
 }
 
@@ -391,8 +392,8 @@ module userRoleSearchIndexDataContributorRG 'core/security/role.bicep' = if (use
   name: 'user-role-azure-index-data-contributor-rg'
   scope: rg
   params: {
-    principalType: 'ServicePrincipal'
-    principalId: api.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
+    principalType: 'User'
+    principalId: principalId
     roleDefinitionId: '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
   }
 }

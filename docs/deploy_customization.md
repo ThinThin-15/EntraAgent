@@ -72,3 +72,14 @@ Change the SKU of the agent deployment:
 ```shell
 azd env set AZURE_AI_AGENT_DEPLOYMENT_SKU Standard
 ```
+
+Change the capacity (in thousands of tokens per minute) of the embeddings deployment:
+
+```shell
+azd env set AZURE_AI_EMBED_DEPLOYMENT_CAPACITY 50
+```
+
+Change the SKU of the embeddings deployment:
+
+```shell
+azd env set AZURE_AI_EMBED_DEPLOYMENT_SKU Standard
