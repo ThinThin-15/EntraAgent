@@ -21,6 +21,14 @@ echo "AZURE_EXISTING_AIPROJECT_ENDPOINT=$(azd env get-value AZURE_EXISTING_AIPRO
 echo "ENABLE_AZURE_MONITOR_TRACING=$(azd env get-value ENABLE_AZURE_MONITOR_TRACING)" >> $ENV_FILE_PATH
 echo "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=$(azd env get-value AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED)" >> $ENV_FILE_PATH
 
+
 echo "Web app URL:"
-echo -e "\033[0;36m $(azd env get-value SERVICE_API_URI)"
+echo -e "\033[0;36m$(azd env get-value SERVICE_API_URI)\033[0m"
+
+echo "Username:"
+echo -e "\033[0;36m$(azd env get-value WEB_APP_USERNAME)\033[0m"
+
+echo "Password:"
+echo -e "\033[0;36m$(azd env get-value WEB_APP_PASSWORD)\033[0m"
+
 exit 0
