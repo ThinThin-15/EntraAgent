@@ -60,16 +60,36 @@ if ($ModelInfo) {
     Write-Host "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
 
 
-    if ($Available -lt 1) {
-        Write-Error "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacit."
-        exit 1
-    } elseif ($Available -lt $IdealCapacity) {
-        $newCapacity = 1
-        if ($Available -ge $MinCapacity) {
-            $newCapacity = $Available
+    if ($Available -lt $IdealCapacity) {
+
+        # Determine newCapacity based on user prompt or availability
+        # This logic assumes it will replace the subsequent lines that also set $newCapacity.
+        if ($Available -ge 1) {
+            $validInput = $false
+            # $newCapacity will be set by user input if $Available >= 1
+            do {
+            $userInput = Read-Host "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $IdealCapacity. Please enter a new capacity (integer between 1 and $Available): "
+            
+            $parsedInt = 0 # Variable to hold the parsed integer
+            if ([int]::TryParse($userInput, [ref]$parsedInt)) {
+                if ($parsedInt -ge 1 -and $parsedInt -le $Available) {
+                $newCapacity = $parsedInt # Set $newCapacity to the user's valid choice
+                $validInput = $true
+                } else {
+                Write-Warning "Invalid input. '$parsedInt' is not between 1 and $Available. Please try again."
+                }
+            } else {
+                Write-Warning "Invalid input: '$userInput' is not a valid integer. Please try again."
+            }
+            } while (-not $validInput)
+            azd env set $CapacityEnvVarName $newCapacity
+        } else { 
+            # This case handles when $Available is 0 or less (though quota is typically non-negative).
+            # Prompting for "between 1 and $Available" is not possible.
+            Write-Error "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $IdealCapacity."
+            exit 1
         }
-        azd env set $CapacityEnvVarName $newCapacity
-        Write-Error "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity, Downgrade quota to: $newCapacity."
+        
     } else {
         Write-Host "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity."
     }

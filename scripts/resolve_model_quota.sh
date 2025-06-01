@@ -84,17 +84,28 @@ if [ -n "$ModelInfo" ]; then
     Available=$((Limit - CurrentValue))
     echo "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
 
-    if (( Available < 1 )); then
-        echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity."
-        exit 1
-    elif (( Available < IdealCapacity )); then
-        newCapacity=1
-        if (( Available >= MinCapacity )); then
-            newCapacity=$Available
+    if [ "$Available" -lt "$IdealCapacity" ]; then
+        if [ "$Available" -ge 1 ]; then
+            validInput=false
+            while [ "$validInput" = false ]; do
+                read -p "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $IdealCapacity. Please enter a new capacity (integer between 1 and $Available): " userInput
+
+                if [[ "$userInput" =~ ^[0-9]+$ ]]; then
+                    if [ "$userInput" -ge 1 ] && [ "$userInput" -le "$Available" ]; then
+                        newCapacity=$userInput
+                        validInput=true
+                    else
+                        echo "⚠️ WARNING: Invalid input. '$userInput' is not between 1 and $Available. Please try again." >&2
+                    fi
+                else
+                    echo "⚠️ WARNING: Invalid input: '$userInput' is not a valid integer. Please try again." >&2
+                fi
+            done
+            azd env set "$CapacityEnvVarName" "$newCapacity"
+        else
+            echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $IdealCapacity." >&2
+            exit 1
         fi
-        echo "🔧 Setting environment variable $CapacityEnvVarName to $newCapacity ..."
-        azd env set "$CapacityEnvVarName" "$newCapacity"
-        echo "❌ ERROR: Insufficient quota. Requested: $IdealCapacity. Downgraded to: $newCapacity."
     else
         echo "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity."
     fi
