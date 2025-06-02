@@ -5,8 +5,7 @@ Location=""
 Model=""
 DeploymentType="Standard"
 CapacityEnvVarName=""
-IdealCapacity=""
-MinCapacity=""
+Capacity=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -27,12 +26,8 @@ while [[ $# -gt 0 ]]; do
             CapacityEnvVarName="$2"
             shift 2
             ;;
-        -IdealCapacity)
-            IdealCapacity="$2"
-            shift 2
-            ;;
-        -MinCapacity)
-            MinCapacity="$2"
+        -Capacity)
+            Capacity="$2"
             shift 2
             ;;
         *)
@@ -46,12 +41,12 @@ done
 MissingParams=()
 [[ -z "$Location" ]] && MissingParams+=("location")
 [[ -z "$Model" ]] && MissingParams+=("model")
-[[ -z "$IdealCapacity" ]] && MissingParams+=("capacity")
+[[ -z "$Capacity" ]] && MissingParams+=("capacity")
 [[ -z "$DeploymentType" ]] && MissingParams+=("deployment-type")
 
 if [[ ${#MissingParams[@]} -gt 0 ]]; then
     echo "❌ ERROR: Missing required parameters: ${MissingParams[*]}"
-    echo "Usage: ./resolve_model_quota.sh -Location <Location> -Model <Model> -IdealCapacity <CAPACITY> -MinCapacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DeploymentType>]"
+    echo "Usage: ./resolve_model_quota.sh -Location <Location> -Model <Model> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DeploymentType>]"
     exit 1
 fi
 
@@ -84,11 +79,11 @@ if [ -n "$ModelInfo" ]; then
     Available=$((Limit - CurrentValue))
     echo "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
 
-    if [ "$Available" -lt "$IdealCapacity" ]; then
+    if [ "$Available" -lt "$Capacity" ]; then
         if [ "$Available" -ge 1 ]; then
             validInput=false
             while [ "$validInput" = false ]; do
-                read -p "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $IdealCapacity. Please enter a new capacity (integer between 1 and $Available): " userInput
+                read -p "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $Capacity. Please enter a new capacity (integer between 1 and $Available): " userInput
 
                 if [[ "$userInput" =~ ^[0-9]+$ ]]; then
                     if [ "$userInput" -ge 1 ] && [ "$userInput" -le "$Available" ]; then
@@ -103,10 +98,13 @@ if [ -n "$ModelInfo" ]; then
             done
             azd env set "$CapacityEnvVarName" "$newCapacity"
         else
-            echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $IdealCapacity." >&2
+            echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $Capacity." >&2
             exit 1
         fi
     else
-        echo "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity."
+        echo "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $Capacity."
     fi
 fi
+
+echo "Set exit code to 0"
+exit 0

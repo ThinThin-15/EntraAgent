@@ -3,8 +3,7 @@ param (
     [string]$Model,
     [string]$DeploymentType = "Standard",
     [string]$CapacityEnvVarName,
-    [int]$IdealCapacity,
-    [int]$MinCapacity
+    [int]$Capacity
 )
 
 # Verify all required parameters are provided
@@ -18,7 +17,7 @@ if (-not $Model) {
     $MissingParams += "model"
 }
 
-if (-not $IdealCapacity) {
+if (-not $Capacity) {
     $MissingParams += "capacity"
 }
 
@@ -28,7 +27,7 @@ if (-not $DeploymentType) {
 
 if ($MissingParams.Count -gt 0) {
     Write-Error "❌ ERROR: Missing required parameters: $($MissingParams -join ', ')"
-    Write-Host "Usage: .\resolve_model_quota.ps1 -Location <LOCATION> -Model <MODEL> -IdealCapacity <CAPACITY> -MinCapacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DEPLOYMENT_TYPE>]"
+    Write-Host "Usage: .\resolve_model_quota.ps1 -Location <LOCATION> -Model <MODEL> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DEPLOYMENT_TYPE>]"
     exit 1
 }
 
@@ -60,7 +59,7 @@ if ($ModelInfo) {
     Write-Host "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
 
 
-    if ($Available -lt $IdealCapacity) {
+    if ($Available -lt $Capacity) {
 
         # Determine newCapacity based on user prompt or availability
         # This logic assumes it will replace the subsequent lines that also set $newCapacity.
@@ -68,7 +67,7 @@ if ($ModelInfo) {
             $validInput = $false
             # $newCapacity will be set by user input if $Available >= 1
             do {
-            $userInput = Read-Host "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $IdealCapacity. Please enter a new capacity (integer between 1 and $Available): "
+            $userInput = Read-Host "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal is $Capacity. Please enter a new capacity (integer between 1 and $Available): "
             
             $parsedInt = 0 # Variable to hold the parsed integer
             if ([int]::TryParse($userInput, [ref]$parsedInt)) {
@@ -86,11 +85,13 @@ if ($ModelInfo) {
         } else { 
             # This case handles when $Available is 0 or less (though quota is typically non-negative).
             # Prompting for "between 1 and $Available" is not possible.
-            Write-Error "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $IdealCapacity."
+            Write-Error "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $Capacity."
             exit 1
         }
         
     } else {
-        Write-Host "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $IdealCapacity."
+        Write-Host "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $Capacity."
     }
+
+    exit 0
 }

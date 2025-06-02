@@ -1,112 +1,109 @@
 #!/bin/bash
 
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -SubscriptionId) SubscriptionId="$2"; shift ;;
-        -Location) Location="$2"; shift ;;
-        *) echo "Unknown parameter passed: $1"; exit 1 ;;
-    esac
-    shift
-done
+set -e
 
-    
-# Validate required parameters
-MissingParams=()
-[ -z "$SubscriptionId" ] && MissingParams+=("subscription")
-[ -z "$Location" ] && MissingParams+=("location")
+# --- Check Required Environment Variables ---
+SubscriptionId="${AZURE_SUBSCRIPTION_ID}"
+Location="${AZURE_LOCATION}"
 
-if [ ${#MissingParams[@]} -gt 0 ]; then
-    echo "❌ ERROR: Missing required parameters: ${MissingParams[*]}"
-    echo "Usage: ./set_default_models.sh -SubscriptionId <SUBSCRIPTION_ID> -Location <LOCATION>"
+Errors=0
+
+if [ -z "$SubscriptionId" ]; then
+    echo "❌ ERROR: Missing AZURE_SUBSCRIPTION_ID" >&2
+    Errors=$((Errors + 1))
+fi
+
+if [ -z "$Location" ]; then
+    echo "❌ ERROR: Missing AZURE_LOCATION" >&2
+    Errors=$((Errors + 1))
+fi
+
+if [ "$Errors" -gt 0 ]; then
     exit 1
 fi
 
-
-
-# Default environment variables
+# --- Default Values ---
 declare -A defaultEnvVars=(
     [AZURE_AI_EMBED_DEPLOYMENT_NAME]="text-embedding-3-small"
     [AZURE_AI_EMBED_MODEL_NAME]="text-embedding-3-small"
     [AZURE_AI_EMBED_MODEL_FORMAT]="OpenAI"
     [AZURE_AI_EMBED_MODEL_VERSION]="1"
     [AZURE_AI_EMBED_DEPLOYMENT_SKU]="Standard"
-    [AZURE_AI_EMBED_DEPLOYMENT_CAPACITY]="50"
+    [AZURE_AI_EMBED_DEPLOYMENT_CAPACITY]="500000"
     [AZURE_AI_AGENT_DEPLOYMENT_NAME]="gpt-4o-mini"
     [AZURE_AI_AGENT_MODEL_NAME]="gpt-4o-mini"
     [AZURE_AI_AGENT_MODEL_VERSION]="2024-07-18"
     [AZURE_AI_AGENT_MODEL_FORMAT]="OpenAI"
     [AZURE_AI_AGENT_DEPLOYMENT_SKU]="GlobalStandard"
-    [AZURE_AI_AGENT_DEPLOYMENT_CAPACITY]="80"
+    [AZURE_AI_AGENT_DEPLOYMENT_CAPACITY]="800000"
 )
 
-# Set environment variables
+# --- Set Env Vars and azd env ---
+declare -A envVars
 for key in "${!defaultEnvVars[@]}"; do
     val="${!key}"
     if [ -z "$val" ]; then
         val="${defaultEnvVars[$key]}"
-        export $key="$val"
     fi
+    envVars[$key]="$val"
     azd env set "$key" "$val"
 done
 
-# Build chat deployment
-chatDeployment=(
-    "$AZURE_AI_AGENT_DEPLOYMENT_NAME"
-    "$AZURE_AI_AGENT_MODEL_NAME"
-    "$AZURE_AI_AGENT_MODEL_VERSION"
-    "$AZURE_AI_AGENT_MODEL_FORMAT"
-    "$AZURE_AI_AGENT_DEPLOYMENT_SKU"
-    "$AZURE_AI_AGENT_DEPLOYMENT_CAPACITY"
-    "AZURE_AI_AGENT_DEPLOYMENT_CAPACITY"
+# --- Build Chat Deployment ---
+chatDeployment_name="${AZURE_AI_AGENT_DEPLOYMENT_NAME}"
+chatDeployment_model_name="${AZURE_AI_AGENT_MODEL_NAME}"
+chatDeployment_model_version="${AZURE_AI_AGENT_MODEL_VERSION}"
+chatDeployment_model_format="${AZURE_AI_AGENT_MODEL_FORMAT}"
+chatDeployment_sku_name="${AZURE_AI_AGENT_DEPLOYMENT_SKU}"
+chatDeployment_capacity="${AZURE_AI_AGENT_DEPLOYMENT_CAPACITY}"
+chatDeployment_capacity_env="AZURE_AI_AGENT_DEPLOYMENT_CAPACITY"
+
+aiModelDeployments=(
+    "$chatDeployment_name|$chatDeployment_model_name|$chatDeployment_model_version|$chatDeployment_model_format|$chatDeployment_sku_name|$chatDeployment_capacity|$chatDeployment_capacity_env"
 )
 
-aiModelDeployments=("${chatDeployment[@]}")
+# --- Optional Embed Deployment ---
+if [ "$USE_AZURE_AI_SEARCH_SERVICE" == "true" ]; then
+    embedDeployment_name="${AZURE_AI_EMBED_DEPLOYMENT_NAME}"
+    embedDeployment_model_name="${AZURE_AI_EMBED_MODEL_NAME}"
+    embedDeployment_model_version="${AZURE_AI_EMBED_MODEL_VERSION}"
+    embedDeployment_model_format="${AZURE_AI_EMBED_MODEL_FORMAT}"
+    embedDeployment_sku_name="${AZURE_AI_EMBED_DEPLOYMENT_SKU}"
+    embedDeployment_capacity="${AZURE_AI_EMBED_DEPLOYMENT_CAPACITY}"
+    embedDeployment_capacity_env="AZURE_AI_EMBED_DEPLOYMENT_CAPACITY"
 
-
-# Optionally add embed deployment
-if [[ "${USE_AZURE_AI_SEARCH_SERVICE,,}" == "true" ]]; then
-    embedDeployment=(
-        "$AZURE_AI_EMBED_DEPLOYMENT_NAME"
-        "$AZURE_AI_EMBED_MODEL_NAME"
-        "$AZURE_AI_EMBED_MODEL_VERSION"
-        "$AZURE_AI_EMBED_MODEL_FORMAT"
-        "$AZURE_AI_EMBED_DEPLOYMENT_SKU"
-        "$AZURE_AI_EMBED_DEPLOYMENT_CAPACITY"
-        "AZURE_AI_EMBED_DEPLOYMENT_CAPACITY"
+    aiModelDeployments+=(
+        "$embedDeployment_name|$embedDeployment_model_name|$embedDeployment_model_version|$embedDeployment_model_format|$embedDeployment_sku_name|$embedDeployment_capacity|$embedDeployment_capacity_env"
     )
-    aiModelDeployments+=("${embedDeployment[@]}")
 fi
-# Set subscription
+
+# --- Set Subscription ---
 az account set --subscription "$SubscriptionId"
 echo "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
-
-# Validate quota
 QuotaAvailable=true
-for ((i=0; i<${#aiModelDeployments[@]}; i+=7)); do
-    name="${aiModelDeployments[i]}"
-    model="${aiModelDeployments[i+1]}"
-    version="${aiModelDeployments[i+2]}"
-    format="${aiModelDeployments[i+3]}"
-    sku="${aiModelDeployments[i+4]}"
-    ideal_capacity="${aiModelDeployments[i+5]}"
-    capacity_env="${aiModelDeployments[i+6]}"
-    min_capacity=30
 
+# --- Validate Quota ---
+for entry in "${aiModelDeployments[@]}"; do
+    IFS="|" read -r name model model_version model_format type capacity capacity_env_var_name <<< "$entry"
     echo "🔍 Validating model deployment: $name ..."
-    ./scripts/resolve_model_quota.sh -Location "$Location" -Model "$model" -IdealCapacity "$ideal_capacity" -MinCapacity "$min_capacity" -CapacityEnvVarName "$capacity_env" -DeploymentType "$sku"
+    ./scripts/resolve_model_quota.sh \
+        -Location "$Location" \
+        -Model "$model" \
+        -Capacity "$capacity" \
+        -CapacityEnvVarName "$capacity_env_var_name" \
+        -DeploymentType "$type"
+
     if [ $? -ne 0 ]; then
-        echo "❌ ERROR: Quota validation failed for model deployment: $name"
+        echo "❌ ERROR: Quota validation failed for model deployment: $name" >&2
         QuotaAvailable=false
     fi
 done
 
-
-if [ "$QuotaAvailable" = false ]; then
+# --- Final Check ---
+if [ "$QuotaAvailable" != "true" ]; then
     exit 1
 else
     echo "✅ All model deployments passed quota validation successfully."
     exit 0
 fi
-
