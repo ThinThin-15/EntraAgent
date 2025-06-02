@@ -53,6 +53,10 @@ $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR
 
 $resourceGroupName = azd env get-value AZURE_RESOURCE_GROUP
 $containerAppName = azd env get-value SERVICE_API_NAME
+$subscriptionId = azd env get-value AZURE_SUBSCRIPTION_ID
+
+az account set --subscription $subscriptionId
+Write-Host "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
 
 Write-Host "Setup username and password in the secrets..."
