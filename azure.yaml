@@ -8,25 +8,15 @@ metadata:
 
 hooks:
   preup:
-    windows:
-      shell: pwsh
-      run: ./scripts/new_credential.ps1
-      continueOnError: true
-      interactive: true
-    posix:
-      shell: sh
-      run: chmod u+r+x ./scripts/new_credential.sh; ./scripts/new_credential.sh
-      continueOnError: true
-      interactive: true
   postprovision:
     windows:
       shell: pwsh
-      run: ./scripts/write_env.ps1
+      run: ./scripts/write_env.ps1; ./scripts/setup_credential.ps1
       continueOnError: true
       interactive: true
     posix:
       shell: sh
-      run: chmod u+r+x ./scripts/write_env.sh; ./scripts/write_env.sh
+      run: chmod u+r+x ./scripts/write_env.sh; chmod u+r+x ./scripts/setup_credential.sh; ./scripts/write_env.sh; ./scripts/setup_credential.sh
       continueOnError: true
       interactive: true
 
