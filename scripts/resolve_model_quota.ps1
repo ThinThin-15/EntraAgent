@@ -1,7 +1,8 @@
 param (
     [string]$Location,
     [string]$Model,
-    [string]$DeploymentType = "Standard",
+    [string]$Format,
+    [string]$DeploymentType,
     [string]$CapacityEnvVarName,
     [int]$Capacity
 )
@@ -21,13 +22,17 @@ if (-not $Capacity) {
     $MissingParams += "capacity"
 }
 
+if (-not $Format) {
+    $MissingParams += "format"
+}
+
 if (-not $DeploymentType) {
     $MissingParams += "deployment-type"
 }
 
 if ($MissingParams.Count -gt 0) {
     Write-Error "❌ ERROR: Missing required parameters: $($MissingParams -join ', ')"
-    Write-Host "Usage: .\resolve_model_quota.ps1 -Location <LOCATION> -Model <MODEL> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DEPLOYMENT_TYPE>]"
+    Write-Host "Usage: .\resolve_model_quota.ps1 -Location <LOCATION> -Model <MODEL> -Format <FORMAT> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DEPLOYMENT_TYPE>]"
     exit 1
 }
 
@@ -36,7 +41,7 @@ if ($DeploymentType -ne "Standard" -and $DeploymentType -ne "GlobalStandard") {
     exit 1
 }
 
-$ModelType = "OpenAI.$DeploymentType.$Model"
+$ModelType = "$Format.$DeploymentType.$Model"
 
 Write-Host "🔍 Checking quota for $ModelType in $Location ..."
 

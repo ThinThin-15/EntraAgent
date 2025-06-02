@@ -3,7 +3,8 @@
 # Initialize variables
 Location=""
 Model=""
-DeploymentType="Standard"
+Format=""
+DeploymentType=""
 CapacityEnvVarName=""
 Capacity=""
 
@@ -30,6 +31,10 @@ while [[ $# -gt 0 ]]; do
             Capacity="$2"
             shift 2
             ;;
+        -Format)
+            Format="$2"
+            shift 2
+            ;;
         *)
             echo "❌ ERROR: Unknown parameter: $1"
             exit 1
@@ -46,7 +51,7 @@ MissingParams=()
 
 if [[ ${#MissingParams[@]} -gt 0 ]]; then
     echo "❌ ERROR: Missing required parameters: ${MissingParams[*]}"
-    echo "Usage: ./resolve_model_quota.sh -Location <Location> -Model <Model> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DeploymentType>]"
+    echo "Usage: ./resolve_model_quota.sh -Location <Location> -Model <Model> -Format <Format> -Capacity <CAPACITY> -CapacityEnvVarName <ENV_VAR_NAME> [-DeploymentType <DeploymentType>]"
     exit 1
 fi
 
@@ -55,7 +60,7 @@ if [[ "$DeploymentType" != "Standard" && "$DeploymentType" != "GlobalStandard" ]
     exit 1
 fi
 
-ModelType="OpenAI.$DeploymentType.$Model"
+ModelType="$Format.$DeploymentType.$Model"
 
 echo "🔍 Checking quota for $ModelType in $Location ..."
 

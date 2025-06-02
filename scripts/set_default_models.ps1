@@ -24,13 +24,13 @@ $defaultEnvVars = @{
     AZURE_AI_EMBED_MODEL_FORMAT = 'OpenAI'
     AZURE_AI_EMBED_MODEL_VERSION = '1'
     AZURE_AI_EMBED_DEPLOYMENT_SKU = 'Standard'
-    AZURE_AI_EMBED_DEPLOYMENT_CAPACITY = '500000'
+    AZURE_AI_EMBED_DEPLOYMENT_CAPACITY = '50'
     AZURE_AI_AGENT_DEPLOYMENT_NAME = 'gpt-4o-mini'
     AZURE_AI_AGENT_MODEL_NAME = 'gpt-4o-mini'
     AZURE_AI_AGENT_MODEL_VERSION = '2024-07-18'
     AZURE_AI_AGENT_MODEL_FORMAT = 'OpenAI'
     AZURE_AI_AGENT_DEPLOYMENT_SKU = 'GlobalStandard'
-    AZURE_AI_AGENT_DEPLOYMENT_CAPACITY = '800000'
+    AZURE_AI_AGENT_DEPLOYMENT_CAPACITY = '80'
 }
 
 $envVars = @{}
@@ -93,10 +93,11 @@ foreach ($deployment in $aiModelDeployments) {
     $name = $deployment.name
     $model = $deployment.model.name
     $type = $deployment.sku.name
+    $format = $deployment.model.format
     $capacity = $deployment.sku.capacity
     $capacity_env_var_name = $deployment.capacity_env_var_name
     Write-Host "🔍 Validating model deployment: $name ..."
-    & .\scripts\resolve_model_quota.ps1 -Location $Location -Model $model -Capacity $capacity -CapacityEnvVarName $capacity_env_var_name -DeploymentType $type
+    & .\scripts\resolve_model_quota.ps1 -Location $Location -Model $model -Format $format -Capacity $capacity -CapacityEnvVarName $capacity_env_var_name -DeploymentType $type
 
     # Check if the script failed
     if ($LASTEXITCODE -ne 0) {
