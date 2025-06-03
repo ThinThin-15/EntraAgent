@@ -35,5 +35,5 @@ Add-Content -Path $envFilePath -Value "AZURE_TENANT_ID=$azureTenantId"
 Add-Content -Path $envFilePath -Value "ENABLE_AZURE_MONITOR_TRACING=$enableAzureMonitorTracing"
 Add-Content -Path $envFilePath -Value "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=$azureTracingGenAIContentRecordingEnabled"
 
-Write-Host "Please visit web app URL:"
+Write-Host "🌐 Please visit web app URL:"
 Write-Host $serviceAPIUri -ForegroundColor Cyan

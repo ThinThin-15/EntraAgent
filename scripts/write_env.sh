@@ -22,7 +22,7 @@ echo "ENABLE_AZURE_MONITOR_TRACING=$(azd env get-value ENABLE_AZURE_MONITOR_TRAC
 echo "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=$(azd env get-value AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED)" >> $ENV_FILE_PATH
 
 
-echo "Please visit web app URL:"
+echo "🌐 Please visit web app URL:"
 echo -e "\033[0;36m$(azd env get-value SERVICE_API_URI)\033[0m"
 
 exit 0

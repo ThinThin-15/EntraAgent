@@ -2,10 +2,10 @@
 
 # Prompt for username with validation
 while true; do
-  read -rp "Create a new username for the web app (no spaces, at least 1 character): " username
+  read -rp "👤 Create a new username for the web app (no spaces, at least 1 character): " username
 
   if [[ -z "$username" || "$username" =~ [[:space:]] ]]; then
-    echo "Username cannot be empty or contain spaces." >&2
+    echo "❌ Username cannot be empty or contain spaces." >&2
   else
     break
   fi
@@ -13,17 +13,17 @@ done
 
 # Prompt for password with validation
 while true; do
-  read -rsp "Create a new password for the web app (no spaces, at least 1 character): " password
+  read -rsp "🔑 Create a new password for the web app (no spaces, at least 1 character): " password
   echo
-  read -rsp "Confirm the new password: " confirmPassword
+  read -rsp "🔑 Confirm the new password: " confirmPassword
   echo
 
   if [[ -z "$password" ]]; then
-    echo "Password cannot be empty." >&2
+    echo "❌ Password cannot be empty." >&2
   elif [[ "$password" != "$confirmPassword" ]]; then
-    echo "Passwords do not match." >&2
+    echo "❌ Passwords do not match." >&2
   elif [[ "$password" =~ [[:space:]] ]]; then
-    echo "Password cannot contain spaces." >&2
+    echo "❌ Password cannot contain spaces." >&2
   else
     break
   fi
@@ -37,7 +37,7 @@ subscriptionId=$(azd env get-value AZURE_SUBSCRIPTION_ID)
 az account set --subscription $subscriptionId
 echo "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
-echo "Setup username and password in the secrets..."
+echo "⏳ Setup username and password in the secrets..."
 
 # Set the secrets
 az containerapp secret set \
@@ -53,8 +53,8 @@ az containerapp update \
   --set-env-vars WEB_APP_USERNAME=secretref:web-app-username WEB_APP_PASSWORD=secretref:web-app-password \
   > /dev/null 2>&1
 
-echo "New username and password now are in the secrets"
-echo "Querying the active revision in the container app..."
+echo "✅ New username and password now are in the secrets"
+echo "🔍 Querying the active revision in the container app..."
 
 # Get the active revision name
 activeRevision=$(az containerapp revision list \
@@ -64,11 +64,11 @@ activeRevision=$(az containerapp revision list \
   --output tsv)
 
 if [[ -z "$activeRevision" ]]; then
-  echo "No active revision found for the specified Container App." >&2
+  echo "❌ No active revision found for the specified Container App." >&2
   exit 1
 fi
 
-echo "Restarting revision $activeRevision..."
+echo "♻️ Restarting revision $activeRevision..."
 
 # Restart the active revision
 az containerapp revision restart \
@@ -77,4 +77,4 @@ az containerapp revision restart \
   --revision "$activeRevision" \
   > /dev/null 2>&1
 
-echo "Successfully restarted the revision: $activeRevision"
+echo "✅ Successfully restarted the revision: $activeRevision"
