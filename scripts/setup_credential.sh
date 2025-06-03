@@ -78,3 +78,5 @@ az containerapp revision restart \
   > /dev/null 2>&1
 
 echo "✅ Successfully restarted the revision: $activeRevision"
+
+exit 0

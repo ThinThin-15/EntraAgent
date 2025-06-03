@@ -44,6 +44,13 @@ foreach ($key in $defaultEnvVars.Keys) {
     azd env set $key $envVars[$key]
 }
 
+# --- If we do not use existing AI Project, we don't deploy models, so skip validation ---
+$resourceId = [System.Environment]::GetEnvironmentVariable('AZURE_EXISTING_AIPROJECT_RESOURCE_ID', "Process")
+if (-not [string]::IsNullOrEmpty($resourceId)) {
+    Write-Host "✅ AZURE_EXISTING_AIPROJECT_RESOURCE_ID is set, skipping model deployment validation."
+    exit 0
+}
+
 $chatDeployment = @{
     name = $envVars.AZURE_AI_AGENT_DEPLOYMENT_NAME
     model = @{
@@ -88,6 +95,13 @@ az account set --subscription $SubscriptionId
 Write-Host "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
 $QuotaAvailable = $true
+
+try {
+    Write-Host "🔍 Validating model deployments against quotas..."
+} catch {
+    Write-Error "❌ ERROR: Failed to validate model deployments. Ensure you have the necessary permissions."
+    exit 1
+}
 
 foreach ($deployment in $aiModelDeployments) {
     $name = $deployment.name

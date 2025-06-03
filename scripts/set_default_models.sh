@@ -49,6 +49,13 @@ for key in "${!defaultEnvVars[@]}"; do
     azd env set "$key" "$val"
 done
 
+# --- If we do not use existing AI Project, we don't deploy models, so skip validation ---
+resourceId="${AZURE_EXISTING_AIPROJECT_RESOURCE_ID}"
+if [ -n "$resourceId" ]; then
+    echo "✅ AZURE_EXISTING_AIPROJECT_RESOURCE_ID is set, skipping model deployment validation."
+    exit 0
+fi
+
 # --- Build Chat Deployment ---
 chatDeployment_name="${AZURE_AI_AGENT_DEPLOYMENT_NAME}"
 chatDeployment_model_name="${AZURE_AI_AGENT_MODEL_NAME}"

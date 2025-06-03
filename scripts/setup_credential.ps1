@@ -102,3 +102,5 @@ az containerapp revision restart `
     > $null 2>&1
 
 Write-Host "✅ Successfully restarted the revision: $activeRevision"
+
+exit 0
