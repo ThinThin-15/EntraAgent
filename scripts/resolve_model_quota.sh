@@ -71,44 +71,42 @@ if [ -z "$ModelInfo" ]; then
     exit 1
 fi
 
-if [ -n "$ModelInfo" ]; then
-    CurrentValue=$(echo "$ModelInfo" | awk -F': ' '/"currentvalue"/ {print $2}' | tr -d ',' | tr -d ' ')
-    Limit=$(echo "$ModelInfo" | awk -F': ' '/"limit"/ {print $2}' | tr -d ',' | tr -d ' ')
+CurrentValue=$(echo "$ModelInfo" | awk -F': ' '/"currentvalue"/ {print $2}' | tr -d ',' | tr -d ' ')
+Limit=$(echo "$ModelInfo" | awk -F': ' '/"limit"/ {print $2}' | tr -d ',' | tr -d ' ')
 
-    CurrentValue=${CurrentValue:-0}
-    Limit=${Limit:-0}
+CurrentValue=${CurrentValue:-0}
+Limit=${Limit:-0}
 
-    CurrentValue=$(echo "$CurrentValue" | cut -d'.' -f1)
-    Limit=$(echo "$Limit" | cut -d'.' -f1)
+CurrentValue=$(echo "$CurrentValue" | cut -d'.' -f1)
+Limit=$(echo "$Limit" | cut -d'.' -f1)
 
-    Available=$((Limit - CurrentValue))
-    echo "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
+Available=$((Limit - CurrentValue))
+echo "✅ Model available - Model: $ModelType | Used: $CurrentValue | Limit: $Limit | Available: $Available"
 
-    if [ "$Available" -lt "$Capacity" ]; then
-        if [ "$Available" -ge 1 ]; then
-            validInput=false
-            while [ "$validInput" = false ]; do
-                read -p "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $Capacity. Please enter a new capacity (integer between 1 and $Available): " userInput
+if [ "$Available" -lt "$Capacity" ]; then
+    if [ "$Available" -ge 1 ]; then
+        validInput=false
+        while [ "$validInput" = false ]; do
+            read -p "⚠️ ERROR: Insufficient quota. Available: $Available (in thousands of tokens per minute). Ideal was $Capacity. Please enter a new capacity (integer between 1 and $Available): " userInput
 
-                if [[ "$userInput" =~ ^[0-9]+$ ]]; then
-                    if [ "$userInput" -ge 1 ] && [ "$userInput" -le "$Available" ]; then
-                        newCapacity=$userInput
-                        validInput=true
-                    else
-                        echo "⚠️ WARNING: Invalid input. '$userInput' is not between 1 and $Available. Please try again." >&2
-                    fi
+            if [[ "$userInput" =~ ^[0-9]+$ ]]; then
+                if [ "$userInput" -ge 1 ] && [ "$userInput" -le "$Available" ]; then
+                    newCapacity=$userInput
+                    validInput=true
                 else
-                    echo "⚠️ WARNING: Invalid input: '$userInput' is not a valid integer. Please try again." >&2
+                    echo "⚠️ WARNING: Invalid input. '$userInput' is not between 1 and $Available. Please try again." >&2
                 fi
-            done
-            azd env set "$CapacityEnvVarName" "$newCapacity"
-        else
-            echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $Capacity." >&2
-            exit 1
-        fi
+            else
+                echo "⚠️ WARNING: Invalid input: '$userInput' is not a valid integer. Please try again." >&2
+            fi
+        done
+        azd env set "$CapacityEnvVarName" "$newCapacity"
     else
-        echo "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $Capacity."
+        echo "❌ ERROR: Insufficient quota for model: $Model in location: $Location. Available: less than 1 (in thousands of tokens per minute), Requested: $Capacity." >&2
+        exit 1
     fi
+else
+    echo "✅ Sufficient quota for model: $Model in location: $Location. Available: $Available, Requested: $Capacity."
 fi
 
 echo "Set exit code to 0"
