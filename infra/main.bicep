@@ -116,8 +116,16 @@ param enableAzureMonitorTracing bool = false
 @description('Do we want to use the Azure Monitor tracing for GenAI content recording')
 param azureTracingGenAIContentRecordingEnabled bool = false
 
+param templateValidationMode bool = false
+
+@description('Random seed to be used during generation of new resources suffixes.')
+param seed string = newGuid()
+
+var runnerPrincipalType = templateValidationMode? 'ServicePrincipal' : 'User'
+
 var abbrs = loadJsonContent('./abbreviations.json')
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
+
+var resourceToken = templateValidationMode? toLower(uniqueString(subscription().id, environmentName, location, seed)) :  toLower(uniqueString(subscription().id, environmentName, location))
 
 var tags = { 'azd-env-name': environmentName }
 
@@ -299,7 +307,7 @@ module userRoleAzureAIDeveloper 'core/security/role.bicep' = {
   name: 'user-role-azureai-developer'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: '64702f94-c441-49e6-a78b-ef80e0188fee'
   }
@@ -309,7 +317,7 @@ module userCognitiveServicesUser  'core/security/role.bicep' = if (empty(azureEx
   name: 'user-role-cognitive-services-user'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908'
   }
@@ -319,7 +327,7 @@ module userAzureAIUser  'core/security/role.bicep' = if (empty(azureExistingAIPr
   name: 'user-role-azure-ai-user'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: '53ca6127-db72-4b80-b1b0-d745d6d5456d'
   }
@@ -330,7 +338,7 @@ module userCognitiveServicesUser2  'core/security/role.bicep' = if (!empty(azure
   name: 'user-role-cognitive-services-user2'
   scope: existingProjectRG
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908'
   }
@@ -391,7 +399,7 @@ module userRoleSearchIndexDataContributorRG 'core/security/role.bicep' = if (use
   name: 'user-role-azure-index-data-contributor-rg'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
   }
@@ -401,7 +409,7 @@ module userRoleSearchIndexDataReaderRG 'core/security/role.bicep' = if (useSearc
   name: 'user-role-azure-index-data-reader-rg'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
   }
@@ -411,7 +419,7 @@ module userRoleSearchServiceContributorRG 'core/security/role.bicep' = if (useSe
   name: 'user-role-azure-search-service-contributor-rg'
   scope: rg
   params: {
-    principalType: 'User'
+    principalType: runnerPrincipalType
     principalId: principalId
     roleDefinitionId: '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
   }
