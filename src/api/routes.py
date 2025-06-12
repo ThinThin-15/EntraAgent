@@ -56,8 +56,9 @@ import secrets
 
 security = HTTPBasic()
 
+RUNNING_PROD = os.getenv("RUNNING_IN_PRODUCTION", "false").lower() == "true"
 
-def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security) if os.getenv("RUNNING_IN_PRODUCTION") else None) -> None:
+def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security)) -> None:
     # Only perform authentication if RUNNING_IN_PRODUCTION is set to "true" (case-insensitive)
     if not os.getenv("RUNNING_IN_PRODUCTION"):
         # Not in production mode (or RUNNING_IN_PRODUCTION is not "true"),
@@ -85,6 +86,8 @@ def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security)
             headers={"WWW-Authenticate": "Basic"},
         )
     return
+
+auth_dependency = Depends(authenticate) if RUNNING_PROD else None
 
 
 def get_ai_project(request: Request) -> AIProjectClient:
@@ -190,7 +193,7 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
         return None
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request, _ = Depends(authenticate)):
+async def index(request: Request, _ = auth_dependency):
     return templates.TemplateResponse(
         "index.html", 
         {
@@ -236,7 +239,7 @@ async def history(
     request: Request,
     ai_project : AIProjectClient = Depends(get_ai_project),
     agent : Agent = Depends(get_agent),
-	_ = Depends(authenticate)
+	_ = auth_dependency
 ):
     with tracer.start_as_current_span("chat_history"):
         # Retrieve the thread ID from the cookies (if available).
@@ -295,7 +298,7 @@ async def chat(
     agent : Agent = Depends(get_agent),
     ai_project: AIProjectClient = Depends(get_ai_project),
     app_insights_conn_str : str = Depends(get_app_insights_conn_str),
-	_ = Depends(authenticate)
+	_ = auth_dependency
 ):
     # Retrieve the thread ID from the cookies (if available).
     thread_id = request.cookies.get('thread_id')
