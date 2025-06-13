@@ -20,7 +20,7 @@ from azure.ai.agents.models import (
     FileSearchTool,
     Tool,
 )
-from azure.ai.projects.models import ConnectionType
+from azure.ai.projects.models import ConnectionType, ApiKeyCredentials
 from azure.identity.aio import DefaultAzureCredential
 from azure.core.credentials_async import AsyncTokenCredential
 
@@ -74,18 +74,11 @@ async def create_index_maybe(
         except ValueError as e:
             logger.error("Error creating index: {e}")
             return
-        if aoai_connection.credentials is None or aoai_connection.credentials.api_key is None: 
-            err = "Error getting the connection to Azure Open AI service. {}"
-            if aoai_connection is not None and (aoai_connection.key is None or  aoai_connection.credentials.api_key is None):
-                logger.error(
-                    err.format(
-                        "Please configure "
-                        f"{aoai_connection.name} to use API key."))
-            else:
-                logger.error(
-                    err.format("Azure Open AI service connection is absent."))
-            return
         
+        embed_api_key = None
+        if aoai_connection.credentials and isinstance(aoai_connection.credentials, ApiKeyCredentials):
+            embed_api_key = aoai_connection.credentials.api_key
+
         search_mgr = SearchIndexManager(
             endpoint=endpoint,
             credential=creds,
@@ -94,7 +87,7 @@ async def create_index_maybe(
             model=embedding,
             deployment_name=embedding,
             embedding_endpoint=aoai_connection.target,
-            embed_api_key=aoai_connection.credentials.api_key
+            embed_api_key=embed_api_key
         )
         # If another application instance already have created the index,
         # do not upload the documents.
