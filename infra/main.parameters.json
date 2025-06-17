@@ -115,6 +115,9 @@
     },
     "templateValidationMode": {
       "value": "${TEMPLATE_VALIDATION_MODE=false}"
+    },
+    "seed": {
+      "value": "${SEED}"
     }
   }
 }
