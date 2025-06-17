@@ -84,6 +84,13 @@ jobs:
         run: azd deploy --no-prompt
       - name: Validate Deployment
         run: azd env get-values
+      - name: Trigger AI Evaluation
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          workflow: ai-evaluation.yaml
+          ref: ${{ github.ref }}
+          inputs: |
+            environment: dev
 
   deploy-test:
     runs-on: ubuntu-latest
@@ -151,6 +158,13 @@ jobs:
         run: azd deploy --no-prompt
       - name: Validate Deployment
         run: azd env get-values
+      - name: Trigger AI Evaluation
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          workflow: ai-evaluation.yaml
+          ref: ${{ github.ref }}
+          inputs: |
+            environment: test
 
   deploy-prod:
     runs-on: ubuntu-latest
@@ -218,3 +232,10 @@ jobs:
         run: azd deploy --no-prompt
       - name: Validate Deployment
         run: azd env get-values
+      - name: Trigger AI Evaluation
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          workflow: ai-evaluation.yaml
+          ref: ${{ github.ref }}
+          inputs: |
+            environment: prod
