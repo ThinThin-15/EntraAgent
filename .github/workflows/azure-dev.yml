@@ -72,6 +72,8 @@ jobs:
             --federated-credential-provider "github" \
             --tenant-id "$AZURE_TENANT_ID"
         shell: bash
+      - name: Set AZD environment
+        run: azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
       - name: Pre-deployment validation
         run: azd provision --no-prompt --preview
       - name: Provision Infrastructure
@@ -137,6 +139,8 @@ jobs:
             --federated-credential-provider "github" \
             --tenant-id "$AZURE_TENANT_ID"
         shell: bash
+      - name: Set AZD environment
+        run: azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
       - name: Pre-deployment validation
         run: azd provision --no-prompt --preview
       - name: Provision Infrastructure
@@ -202,6 +206,8 @@ jobs:
             --federated-credential-provider "github" \
             --tenant-id "$AZURE_TENANT_ID"
         shell: bash
+      - name: Set AZD environment
+        run: azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
       - name: Pre-deployment validation
         run: azd provision --no-prompt --preview
       - name: Provision Infrastructure
