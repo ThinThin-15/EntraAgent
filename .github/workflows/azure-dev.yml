@@ -21,12 +21,139 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  deploy-dev:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [dev, test, prod]
-    environment: ${{ matrix.environment }}
+    environment: dev
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+      AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+      AZURE_AIHUB_NAME: ${{ secrets.AZURE_AIHUB_NAME }}
+      AZURE_AIPROJECT_NAME: ${{ secrets.AZURE_AIPROJECT_NAME }}
+      AZURE_AISERVICES_NAME: ${{ secrets.AZURE_AISERVICES_NAME }}
+      AZURE_SEARCH_SERVICE_NAME: ${{ secrets.AZURE_SEARCH_SERVICE_NAME }}
+      AZURE_APPLICATION_INSIGHTS_NAME: ${{ secrets.AZURE_APPLICATION_INSIGHTS_NAME }}
+      AZURE_CONTAINER_REGISTRY_NAME: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+      AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
+      AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+      AZURE_LOG_ANALYTICS_WORKSPACE_NAME: ${{ secrets.AZURE_LOG_ANALYTICS_WORKSPACE_NAME }}
+      USE_CONTAINER_REGISTRY: ${{ secrets.USE_CONTAINER_REGISTRY }}
+      USE_APPLICATION_INSIGHTS: ${{ secrets.USE_APPLICATION_INSIGHTS }}
+      USE_AZURE_AI_SEARCH_SERVICE: ${{ secrets.USE_AZURE_AI_SEARCH_SERVICE }}
+      AZURE_AI_AGENT_NAME: ${{ secrets.AZURE_AI_AGENT_NAME }}
+      AZURE_EXISTING_AGENT_ID: ${{ secrets.AZURE_EXISTING_AGENT_ID }}
+      AZURE_AI_AGENT_DEPLOYMENT_NAME: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_NAME }}
+      AZURE_AI_AGENT_DEPLOYMENT_SKU: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_SKU }}
+      AZURE_AI_AGENT_DEPLOYMENT_CAPACITY: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_CAPACITY }}
+      AZURE_AI_AGENT_MODEL_NAME: ${{ secrets.AZURE_AI_AGENT_MODEL_NAME }}
+      AZURE_AI_AGENT_MODEL_FORMAT: ${{ secrets.AZURE_AI_AGENT_MODEL_FORMAT }}
+      AZURE_AI_AGENT_MODEL_VERSION: ${{ secrets.AZURE_AI_AGENT_MODEL_VERSION }}
+      AZURE_AI_EMBED_DEPLOYMENT_NAME: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_NAME }}
+      AZURE_AI_EMBED_DEPLOYMENT_SKU: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_SKU }}
+      AZURE_AI_EMBED_DEPLOYMENT_CAPACITY: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_CAPACITY }}
+      AZURE_AI_EMBED_MODEL_NAME: ${{ secrets.AZURE_AI_EMBED_MODEL_NAME }}
+      AZURE_AI_EMBED_MODEL_FORMAT: ${{ secrets.AZURE_AI_EMBED_MODEL_FORMAT }}
+      AZURE_AI_EMBED_MODEL_VERSION: ${{ secrets.AZURE_AI_EMBED_MODEL_VERSION }}
+      AZURE_EXISTING_AIPROJECT_RESOURCE_ID: ${{ secrets.AZURE_EXISTING_AIPROJECT_RESOURCE_ID }}
+      TEMPLATE_VALIDATION_MODE: ${{ secrets.TEMPLATE_VALIDATION_MODE }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+      - name: Log in with Azure (Federated Credentials)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+        shell: bash
+      - name: Pre-deployment validation
+        run: azd provision --no-prompt --preview
+      - name: Provision Infrastructure
+        run: azd provision --no-prompt
+        env:
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+      - name: Deploy Application
+        run: azd deploy --no-prompt
+      - name: Validate Deployment
+        run: azd env get-values
+
+  deploy-test:
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    environment:
+      name: test
+      url: https://test.example.com
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ secrets.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+      AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+      AZURE_AIHUB_NAME: ${{ secrets.AZURE_AIHUB_NAME }}
+      AZURE_AIPROJECT_NAME: ${{ secrets.AZURE_AIPROJECT_NAME }}
+      AZURE_AISERVICES_NAME: ${{ secrets.AZURE_AISERVICES_NAME }}
+      AZURE_SEARCH_SERVICE_NAME: ${{ secrets.AZURE_SEARCH_SERVICE_NAME }}
+      AZURE_APPLICATION_INSIGHTS_NAME: ${{ secrets.AZURE_APPLICATION_INSIGHTS_NAME }}
+      AZURE_CONTAINER_REGISTRY_NAME: ${{ secrets.AZURE_CONTAINER_REGISTRY_NAME }}
+      AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
+      AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
+      AZURE_LOG_ANALYTICS_WORKSPACE_NAME: ${{ secrets.AZURE_LOG_ANALYTICS_WORKSPACE_NAME }}
+      USE_CONTAINER_REGISTRY: ${{ secrets.USE_CONTAINER_REGISTRY }}
+      USE_APPLICATION_INSIGHTS: ${{ secrets.USE_APPLICATION_INSIGHTS }}
+      USE_AZURE_AI_SEARCH_SERVICE: ${{ secrets.USE_AZURE_AI_SEARCH_SERVICE }}
+      AZURE_AI_AGENT_NAME: ${{ secrets.AZURE_AI_AGENT_NAME }}
+      AZURE_EXISTING_AGENT_ID: ${{ secrets.AZURE_EXISTING_AGENT_ID }}
+      AZURE_AI_AGENT_DEPLOYMENT_NAME: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_NAME }}
+      AZURE_AI_AGENT_DEPLOYMENT_SKU: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_SKU }}
+      AZURE_AI_AGENT_DEPLOYMENT_CAPACITY: ${{ secrets.AZURE_AI_AGENT_DEPLOYMENT_CAPACITY }}
+      AZURE_AI_AGENT_MODEL_NAME: ${{ secrets.AZURE_AI_AGENT_MODEL_NAME }}
+      AZURE_AI_AGENT_MODEL_FORMAT: ${{ secrets.AZURE_AI_AGENT_MODEL_FORMAT }}
+      AZURE_AI_AGENT_MODEL_VERSION: ${{ secrets.AZURE_AI_AGENT_MODEL_VERSION }}
+      AZURE_AI_EMBED_DEPLOYMENT_NAME: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_NAME }}
+      AZURE_AI_EMBED_DEPLOYMENT_SKU: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_SKU }}
+      AZURE_AI_EMBED_DEPLOYMENT_CAPACITY: ${{ secrets.AZURE_AI_EMBED_DEPLOYMENT_CAPACITY }}
+      AZURE_AI_EMBED_MODEL_NAME: ${{ secrets.AZURE_AI_EMBED_MODEL_NAME }}
+      AZURE_AI_EMBED_MODEL_FORMAT: ${{ secrets.AZURE_AI_EMBED_MODEL_FORMAT }}
+      AZURE_AI_EMBED_MODEL_VERSION: ${{ secrets.AZURE_AI_EMBED_MODEL_VERSION }}
+      AZURE_EXISTING_AIPROJECT_RESOURCE_ID: ${{ secrets.AZURE_EXISTING_AIPROJECT_RESOURCE_ID }}
+      TEMPLATE_VALIDATION_MODE: ${{ secrets.TEMPLATE_VALIDATION_MODE }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+      - name: Log in with Azure (Federated Credentials)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+        shell: bash
+      - name: Pre-deployment validation
+        run: azd provision --no-prompt --preview
+      - name: Provision Infrastructure
+        run: azd provision --no-prompt
+        env:
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+      - name: Deploy Application
+        run: azd deploy --no-prompt
+      - name: Validate Deployment
+        run: azd env get-values
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-test
+    environment:
+      name: prod
+      url: https://prod.example.com
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
