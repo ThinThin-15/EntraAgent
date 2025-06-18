@@ -78,6 +78,14 @@ jobs:
         run: |
           echo "Running Python linting..."
         shell: bash
+      # - name: Set AZD environment
+      #   run: azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
+      # - name: Pre-deployment validation
+      #   run: azd provision --no-prompt --preview
+      - name: Provision Infrastructure
+        run: azd provision --no-prompt
+        env:
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
       - name: Login to Azure Container Registry
         run: |
           echo "Logging in to Azure Container Registry..."
@@ -87,14 +95,6 @@ jobs:
         run: |
           echo "Building and pushing container image..."
         shell: bash
-      # - name: Set AZD environment
-      #   run: azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
-      # - name: Pre-deployment validation
-      #   run: azd provision --no-prompt --preview
-      - name: Provision Infrastructure
-        run: azd provision --no-prompt
-        env:
-          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
       - name: Deploy Application
         run: azd deploy --no-prompt
       - name: Validate Deployment
