@@ -46,14 +46,20 @@ jobs:
           node-version: '20'
 
       - name: Install frontend dependencies
-        run: echo "Installing frontend dependencies..." 
+        run: |
+          echo "Installing frontend dependencies..." 
+          sleep 10 # Simulating a delay for installation
         working-directory: ./src/frontend
         # Assuming a package.json exists in the frontend directory
 
       - name: Lint frontend code
-        run: echo "Linting frontend code..."
+        run: | 
+          echo "Linting frontend code..."
+          sleep 5 # Simulating a delay for linting
         working-directory: ./src/frontend
 
       - name: Build frontend
-        run: echo "Building frontend..."
+        run: |
+          echo "Building frontend..."
+          sleep 10 # Simulating a delay for build
         working-directory: ./src/frontend
