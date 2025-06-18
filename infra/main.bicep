@@ -125,7 +125,8 @@ var runnerPrincipalType = templateValidationMode? 'ServicePrincipal' : 'User'
 
 var abbrs = loadJsonContent('./abbreviations.json')
 
-var resourceToken = templateValidationMode? toLower(uniqueString(subscription().id, environmentName, location, seed)) :  toLower(uniqueString(subscription().id, environmentName, location))
+
+var resourceToken = toLower(uniqueString(subscription().id, environmentName, location, seed))
 
 var tags = { 'azd-env-name': environmentName }
 
