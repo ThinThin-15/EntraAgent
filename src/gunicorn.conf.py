@@ -171,7 +171,7 @@ async def create_agent(ai_client: AIProjectClient,
     toolset = AsyncToolSet()
     toolset.add(tool)
     
-    instructions = "Use AI Search always. Avoid to use base knowledge." if isinstance(tool, AzureAISearchTool) else "Use File Search always.  Avoid to use base knowledge."
+    instructions = f"You are a AI helpful agent that extract entity in the follow format: {'entity': 'value'}\n. You only do the following entity type: Address, Place" \
     
     agent = await ai_client.agents.create_agent(
         model=os.environ["AZURE_AI_AGENT_DEPLOYMENT_NAME"],
