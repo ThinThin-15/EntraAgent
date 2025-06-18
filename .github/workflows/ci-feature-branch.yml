@@ -45,21 +45,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Check frontend directory exists
-        run: |
-          if [ ! -d ./frontend ]; then
-            echo "Error: ./frontend directory does not exist!" >&2
-            exit 1
-          fi
-
       - name: Install frontend dependencies
         run: npm install
-        working-directory: ./frontend
+        working-directory: ./src/frontend
 
       - name: Lint frontend code
         run: npm run lint
-        working-directory: ./frontend
+        working-directory: ./src/frontend
 
       - name: Build frontend
         run: npm run build
-        working-directory: ./frontend
+        working-directory: ./src/frontend
