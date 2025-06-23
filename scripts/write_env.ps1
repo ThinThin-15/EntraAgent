@@ -5,8 +5,8 @@ $envFilePath = "src\.env"
 Set-Content -Path $envFilePath -Value ""
 
 # Append new values to the .env file
-$aiProjectResourceId = azd env get-value AZURE_EXISTING_AIPROJECT_RESOURCE_ID
-$aiProjectEndpoint = azd env get-value AZURE_EXISTING_AIPROJECT_ENDPOINT
+$aiProjectResourceId = azd env get-value AZURE_EXISTING_AIPROJECT_RESOURCE_ID >> $null
+$aiProjectEndpoint = azd env get-value AZURE_EXISTING_AIPROJECT_ENDPOINT >> $null
 $azureAiagentDeploymentName = azd env get-value AZURE_AI_AGENT_DEPLOYMENT_NAME
 $azureAiAgentId = azd env get-value AZURE_EXISTING_AGENT_ID
 $azureAiAgentName = azd env get-value AZURE_AI_AGENT_NAME
@@ -37,3 +37,5 @@ Add-Content -Path $envFilePath -Value "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_EN
 
 Write-Host "🌐 Please visit web app URL:"
 Write-Host $serviceAPIUri -ForegroundColor Cyan
+
+Write-Host "💡 (Optional) To setup username and password for the web application, run '.\scripts\setup_credential.ps1'."

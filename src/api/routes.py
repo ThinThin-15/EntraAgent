@@ -56,26 +56,15 @@ import secrets
 
 security = HTTPBasic()
 
-RUNNING_PROD = os.getenv("RUNNING_IN_PRODUCTION", "false").lower() == "true"
+username = os.getenv("WEB_APP_USERNAME")
+password = os.getenv("WEB_APP_PASSWORD")
+basic_auth = username and password
 
 def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security)) -> None:
-    # Only perform authentication if RUNNING_IN_PRODUCTION is set to "true" (case-insensitive)
-    if not os.getenv("RUNNING_IN_PRODUCTION"):
-        # Not in production mode (or RUNNING_IN_PRODUCTION is not "true"),
-        # so authentication is skipped.
-        logger.info("Skipping authentication: RUNNING_IN_PRODUCTION is not 'true'.")
-        
+
+    if not basic_auth:
+        logger.info("Skipping authentication: WEB_APP_USERNAME or WEB_APP_PASSWORD not set.")
         return
-
-    username = os.getenv("WEB_APP_USERNAME")
-    password = os.getenv("WEB_APP_PASSWORD")
-
-    if not username or not password:
-        logger.error("WEB_APP_USERNAME or WEB_APP_PASSWORD environment variables not set for production authentication.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication not configured.",
-        )
     
     correct_username = secrets.compare_digest(credentials.username, username)
     correct_password = secrets.compare_digest(credentials.password, password)
@@ -87,7 +76,7 @@ def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security)
         )
     return
 
-auth_dependency = Depends(authenticate) if RUNNING_PROD else None
+auth_dependency = Depends(authenticate) if basic_auth else None
 
 
 def get_ai_project(request: Request) -> AIProjectClient:
