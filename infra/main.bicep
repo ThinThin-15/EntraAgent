@@ -333,17 +333,6 @@ module userAzureAIUser  'core/security/role.bicep' = if (empty(azureExistingAIPr
   }
 }
 
-
-module userCognitiveServicesUser2  'core/security/role.bicep' = if (!empty(azureExistingAIProjectResourceId)) {
-  name: 'user-role-cognitive-services-user2'
-  scope: existingProjectRG
-  params: {
-    principalType: runnerPrincipalType
-    principalId: principalId
-    roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908'
-  }
-}
-
 module backendCognitiveServicesUser  'core/security/role.bicep' = if (empty(azureExistingAIProjectResourceId)) {
   name: 'backend-role-cognitive-services-user'
   scope: rg
