@@ -5,20 +5,20 @@ $envFilePath = "src\.env"
 Set-Content -Path $envFilePath -Value ""
 
 # Append new values to the .env file
-$aiProjectResourceId = azd env get-value AZURE_EXISTING_AIPROJECT_RESOURCE_ID >> $null
-$aiProjectEndpoint = azd env get-value AZURE_EXISTING_AIPROJECT_ENDPOINT >> $null
-$azureAiagentDeploymentName = azd env get-value AZURE_AI_AGENT_DEPLOYMENT_NAME
-$azureAiAgentId = azd env get-value AZURE_EXISTING_AGENT_ID
-$azureAiAgentName = azd env get-value AZURE_AI_AGENT_NAME
-$azureTenantId = azd env get-value AZURE_TENANT_ID
-$searchConnectionName = azd env get-value AZURE_AI_SEARCH_CONNECTION_NAME
-$azureAIEmbedDeploymentName = azd env get-value AZURE_AI_EMBED_DEPLOYMENT_NAME
-$azureAIEmbedDimensions = azd env get-value AZURE_AI_EMBED_DIMENSIONS
-$azureAISearchIndexName = azd env get-value AZURE_AI_SEARCH_INDEX_NAME
-$azureAISearchEndpoint = azd env get-value AZURE_AI_SEARCH_ENDPOINT
-$serviceAPIUri = azd env get-value SERVICE_API_URI
-$enableAzureMonitorTracing = azd env get-value ENABLE_AZURE_MONITOR_TRACING
-$azureTracingGenAIContentRecordingEnabled = azd env get-value AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED
+$aiProjectResourceId = azd env get-value AZURE_EXISTING_AIPROJECT_RESOURCE_ID 2>$null
+$aiProjectEndpoint = azd env get-value AZURE_EXISTING_AIPROJECT_ENDPOINT 2>$null
+$azureAiagentDeploymentName = azd env get-value AZURE_AI_AGENT_DEPLOYMENT_NAME 2>$null
+$azureAiAgentId = azd env get-value AZURE_EXISTING_AGENT_ID 2>$null
+$azureAiAgentName = azd env get-value AZURE_AI_AGENT_NAME 2>$null
+$azureTenantId = azd env get-value AZURE_TENANT_ID 2>$null
+$searchConnectionName = azd env get-value AZURE_AI_SEARCH_CONNECTION_NAME 2>$null
+$azureAIEmbedDeploymentName = azd env get-value AZURE_AI_EMBED_DEPLOYMENT_NAME 2>$null
+$azureAIEmbedDimensions = azd env get-value AZURE_AI_EMBED_DIMENSIONS 2>$null
+$azureAISearchIndexName = azd env get-value AZURE_AI_SEARCH_INDEX_NAME 2>$null
+$azureAISearchEndpoint = azd env get-value AZURE_AI_SEARCH_ENDPOINT 2>$null
+$serviceAPIUri = azd env get-value SERVICE_API_URI 2>$null
+$enableAzureMonitorTracing = azd env get-value ENABLE_AZURE_MONITOR_TRACING 2>$null
+$azureTracingGenAIContentRecordingEnabled = azd env get-value AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED 2>$null
 
 Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_RESOURCE_ID=$aiProjectResourceId"
 Add-Content -Path $envFilePath -Value "AZURE_EXISTING_AIPROJECT_ENDPOINT=$aiProjectEndpoint"
