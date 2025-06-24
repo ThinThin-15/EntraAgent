@@ -4,15 +4,18 @@ import {
   Button,
   Caption1,
   Spinner,
-  Title2,
+  Title3
 } from "@fluentui/react-components";
 import { ChatRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
+import clsx from "clsx";
 
 import { AgentIcon } from "./AgentIcon";
 import { SettingsPanel } from "../core/SettingsPanel";
 import { AgentPreviewChatBot } from "./AgentPreviewChatBot";
 import { MenuButton } from "../core/MenuButton/MenuButton";
 import { IChatItem } from "./chatbot/types";
+import { Waves } from "./Waves";
+import { BuiltWithBadge } from "./BuiltWithBadge";
 
 import styles from "./AgentPreview.module.css";
 
@@ -426,7 +429,6 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       },
     },
   ];
-
   const chatContext = useMemo(
     () => ({
       messageList,
@@ -434,32 +436,52 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       onSend,
     }),
     [messageList, isResponding]
-  );
-
+  );  const isEmpty = (messageList?.length ?? 0) === 0;
+  
   return (
     <div className={styles.container}>
+      <div className={styles.wavesContainer}>
+        <Waves paused={!isEmpty} />
+      </div>
       <div className={styles.topBar}>
         <div className={styles.leftSection}>
-          {messageList.length > 0 && (
-            <>
+          {agentDetails.name ? (
+            <div className={styles.agentIconContainer}>
               <AgentIcon
                 alt=""
                 iconClassName={styles.agentIcon}
                 iconName={agentDetails.metadata?.logo}
               />
-              <Body1 className={styles.agentName}>{agentDetails.name}</Body1>
-            </>
+              <Body1 as="h1" className={styles.agentName}>
+                {agentDetails.name}
+              </Body1>
+            </div>
+          ) : (
+            <div className={styles.agentIconContainer}>
+              <div
+                className={clsx(styles.agentIcon, {
+                  [styles.newAgent]: true,
+                })}
+              />
+              <Body1
+                as="h1"
+                className={clsx(styles.agentName, {
+                  [styles.newAgent]: true,
+                })}
+              >
+                Agent Name
+              </Body1>
+            </div>
           )}
         </div>
         <div className={styles.rightSection}>
-          {" "}
           <Button
             appearance="subtle"
             icon={<ChatRegular aria-hidden={true} />}
             onClick={newThread}
           >
             New Chat
-          </Button>{" "}
+          </Button>
           <MenuButton
             menuButtonText=""
             menuItems={menuItems}
@@ -469,33 +491,37 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               "aria-label": "Settings",
             }}
           />
-        </div>
-      </div>
+        </div>      </div>
+      
       <div className={styles.content}>
-        {isLoadingChatHistory ? (
-          <Spinner label={"Loading chat history..."} />
-        ) : (
-          <>
-            {messageList.length === 0 && (
-              <div className={styles.emptyChatContainer}>
-                <AgentIcon
-                  alt=""
-                  iconClassName={styles.emptyStateAgentIcon}
-                  iconName={agentDetails.metadata?.logo}
-                />
-                <Caption1 className={styles.agentName}>
-                  {agentDetails.name}
-                </Caption1>
-                <Title2>How can I help you today?</Title2>
-              </div>
-            )}
-            <AgentPreviewChatBot
-              agentName={agentDetails.name}
-              agentLogo={agentDetails.metadata?.logo}
-              chatContext={chatContext}
-            />
-          </>
-        )}
+        <div className={styles.chatbot}>
+          {isLoadingChatHistory ? (
+            <Spinner label={"Loading chat history..."} />
+          ) : (
+            <>
+              {isEmpty && (
+                <div className={styles.emptyChatContainer}>
+                  <AgentIcon
+                    alt=""
+                    iconClassName={styles.emptyStateAgentIcon}
+                    iconName={agentDetails.metadata?.logo}
+                  />
+                  <Caption1 className={styles.agentName}>
+                    {agentDetails.name}
+                  </Caption1>
+                  <Title3>How can I help you today?</Title3>
+                </div>
+              )}
+              <AgentPreviewChatBot
+                agentName={agentDetails.name}
+                agentLogo={agentDetails.metadata?.logo}
+                chatContext={chatContext}
+              />
+            </>
+          )}
+        </div>
+        
+        <BuiltWithBadge className={styles.builtWithBadge} />
       </div>
 
       {/* Settings Panel */}

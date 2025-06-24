@@ -392,3 +392,37 @@ def run_agent_evaluation(
 
         # Create a new task to run the evaluation asynchronously
         asyncio.create_task(run_evaluation())
+
+
+@router.get("/config/azure")
+async def get_azure_config():
+    """Get Azure configuration for frontend use"""
+    try:
+        subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
+        tenant_id = os.environ.get("AZURE_TENANT_ID", "")
+        resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "")
+        ai_project_resource_id = os.environ.get("AZURE_EXISTING_AIPROJECT_RESOURCE_ID", "")
+        
+        # Extract resource name and project name from the resource ID
+        # Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{resource}/projects/{project}
+        resource_name = ""
+        project_name = ""
+        
+        if ai_project_resource_id:
+            parts = ai_project_resource_id.split("/")
+            if len(parts) >= 8:
+                resource_name = parts[8]  # accounts/{resource_name}
+            if len(parts) >= 10:
+                project_name = parts[10]  # projects/{project_name}
+        
+        return JSONResponse({
+            "subscriptionId": subscription_id,
+            "tenantId": tenant_id,
+            "resourceGroup": resource_group,
+            "resourceName": resource_name,
+            "projectName": project_name,
+            "wsid": ai_project_resource_id
+        })
+    except Exception as e:
+        logger.error(f"Error getting Azure config: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get Azure configuration")
