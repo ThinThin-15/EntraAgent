@@ -24,6 +24,13 @@ RUN pnpm install \
     && pnpm build
 
 # Return to backend directory
+
+
+RUN apt-get purge -y krb5-user libkrb5-3 libkrb5support0 libgssapi-krb5-2
+RUN apt-get purge -y perl
+RUN apt-get update && apt-get install -y libcap2
+
+
 WORKDIR /code
 
 EXPOSE 50505
