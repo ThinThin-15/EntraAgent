@@ -4,7 +4,7 @@ import {
   Button,
   Caption1,
   Spinner,
-  Title3
+  Title3,
 } from "@fluentui/react-components";
 import { ChatRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
 import clsx from "clsx";
@@ -52,23 +52,29 @@ interface IAnnotation {
   end_index: number;
 }
 
-const preprocessContent = (content: string, annotations?: IAnnotation[]): string => {
-    if (annotations) {
-        // Process annotations in reverse order so that the indexes remain valid
-        annotations.slice().reverse().forEach(annotation => {
-            // If there's a file_name, show it (wrapped in brackets), otherwise fall back to annotation.text.
-            const linkText = annotation.file_name
-                ? `[${annotation.file_name}]`
-                : annotation.text;
+const preprocessContent = (
+  content: string,
+  annotations?: IAnnotation[]
+): string => {
+  if (annotations) {
+    // Process annotations in reverse order so that the indexes remain valid
+    annotations
+      .slice()
+      .reverse()
+      .forEach((annotation) => {
+        // If there's a file_name, show it (wrapped in brackets), otherwise fall back to annotation.text.
+        const linkText = annotation.file_name
+          ? `[${annotation.file_name}]`
+          : annotation.text;
 
-            content = content.slice(0, annotation.start_index) +
-                linkText +
-                content.slice(annotation.end_index);
-        });
-    }
-    return content;
+        content =
+          content.slice(0, annotation.start_index) +
+          linkText +
+          content.slice(annotation.end_index);
+      });
+  }
+  return content;
 };
-
 
 export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
@@ -177,7 +183,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       // IMPORTANT: Add credentials: 'include' if server cookies are critical
       // and if your backend is on the same domain or properly configured for cross-site cookies.
 
-      setIsResponding(true);      
+      setIsResponding(true);
       const response = await fetch("/chat", {
         method: "POST",
         headers: {
@@ -234,7 +240,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
     // Create a reader for the SSE stream
     const reader = stream.getReader();
     const decoder = new TextDecoder();
-    
+
     const readStream = async () => {
       while (true) {
         const { done, value } = await reader.read();
@@ -326,7 +332,12 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               }
 
               // Update the UI with the accumulated content
-              appendAssistantMessage(chatItem, accumulatedContent, isStreaming, annotations);
+              appendAssistantMessage(
+                chatItem,
+                accumulatedContent,
+                isStreaming,
+                annotations
+              );
             }
           }
 
@@ -342,7 +353,12 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   };
 
   const createAssistantMessageDiv: () => IChatItem = () => {
-    var item = { id: crypto.randomUUID(), content: "", isAnswer: true, more: { time: new Date().toISOString() } };
+    var item = {
+      id: crypto.randomUUID(),
+      content: "",
+      isAnswer: true,
+      more: { time: new Date().toISOString() },
+    };
     setMessageList((prev) => [...prev, item]);
     return item;
   };
@@ -354,7 +370,11 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
   ) => {
     try {
       // Preprocess content to convert citations to links using the updated annotation data
-      const preprocessedContent = preprocessContent(accumulatedContent, annotations);      // Convert the accumulated content to HTML using markdown-it
+      // Convert the accumulated content to HTML using markdown-it
+      const preprocessedContent = preprocessContent(
+        accumulatedContent,
+        annotations
+      ); 
       let htmlContent = preprocessedContent;
       if (!chatItem) {
         throw new Error("Message content div not found in the template.");
@@ -374,7 +394,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
           if (lastChild) {
             lastChild.scrollIntoView({ behavior: "smooth", block: "end" });
           }
-       });
+        });
       }
     } catch (error) {
       console.error("Error in appendAssistantMessage:", error);
@@ -436,8 +456,9 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
       onSend,
     }),
     [messageList, isResponding]
-  );  const isEmpty = (messageList?.length ?? 0) === 0;
-  
+  );
+  const isEmpty = (messageList?.length ?? 0) === 0;
+
   return (
     <div className={styles.container}>
       <div className={styles.wavesContainer}>
@@ -491,8 +512,9 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
               "aria-label": "Settings",
             }}
           />
-        </div>      </div>
-      
+        </div>
+      </div>
+
       <div className={styles.content}>
         <div className={styles.chatbot}>
           {isLoadingChatHistory ? (
@@ -520,7 +542,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
             </>
           )}
         </div>
-        
+
         <BuiltWithBadge className={styles.builtWithBadge} />
       </div>
 

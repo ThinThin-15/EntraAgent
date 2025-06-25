@@ -395,7 +395,7 @@ def run_agent_evaluation(
 
 
 @router.get("/config/azure")
-async def get_azure_config():
+async def get_azure_config(_ = auth_dependency):
     """Get Azure configuration for frontend use"""
     try:
         subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
