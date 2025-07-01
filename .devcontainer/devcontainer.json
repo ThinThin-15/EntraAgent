@@ -17,7 +17,7 @@
             ]
         }
     },
-    "postCreateCommand": "python3 -m pip install -e  src && git pull",
+    "postCreateCommand": "git pull && python3 -m pip install -e src",
     "remoteUser": "vscode",
     "hostRequirements": {
         "memory": "8gb"
