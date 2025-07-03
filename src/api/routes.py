@@ -22,7 +22,10 @@ from azure.ai.agents.models import (
     ThreadMessage,
     ThreadRun,
     AsyncAgentEventHandler,
-    RunStep
+    RunStep,
+    RequiredAction,
+    RequiredFunctionToolCall,
+    ToolOutput
 )
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import (
@@ -31,6 +34,8 @@ from azure.ai.projects.models import (
    AgentEvaluationRedactionConfiguration,
    EvaluatorIds
 )
+
+from .function_tools import get_current_time
 
 
 # Create a logger for this module
@@ -148,14 +153,38 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
 
     async def on_thread_run(self, run: ThreadRun) -> Optional[str]:
         logger.info("MyEventHandler: on_thread_run event received")
-        run_information = f"ThreadRun status: {run.status}, thread ID: {run.thread_id}"
-        stream_data = {'content': run_information, 'type': 'thread_run'}
+        stream_data = {'content': f"ThreadRun status: {run.status}, thread ID: {run.thread_id}", 'type': 'thread_run'}
+        if run.status == "requires_action" and run.required_action.submit_tool_outputs:
+            tool_outputs = []
+            for call in run.required_action.submit_tool_outputs.tool_calls:
+                if call.type == "function" and call.function.name == "get_current_time":
+                    now = get_current_time()
+                    tool_outputs.append({"tool_call_id": call.id, "output": now})
+                    logger.info(f"Executing get_current_time, result: {now}")
+            if tool_outputs:
+                logger.info("Submitting tool outputs and continuing stream.")
+                await self.agent_client.runs.submit_tool_outputs_stream(
+                    thread_id=run.thread_id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs,
+                    event_handler=self
+                )
+                return None
+
         if run.status == "failed":
-            stream_data['error'] = run.last_error.as_dict()
-        # automatically run agent evaluation when the run is completed
+            stream_data["error"] = run.last_error.as_dict()
+
         if run.status == "completed":
-            run_agent_evaluation(run.thread_id, run.id, self.ai_project, self.app_insights_conn_str)
+            run_agent_evaluation(
+                run.thread_id,
+                run.id,
+                self.ai_project,
+                self.app_insights_conn_str,
+            )
+
         return serialize_sse_event(stream_data)
+
+    
 
     async def on_error(self, data: str) -> Optional[str]:
         logger.error(f"MyEventHandler: on_error event received: {data}")
@@ -179,6 +208,12 @@ class MyEventHandler(AsyncAgentEventHandler[str]):
                 if azure_ai_search_details:
                     logger.info(f"azure_ai_search input: {azure_ai_search_details.get('input')}")
                     logger.info(f"azure_ai_search output: {azure_ai_search_details.get('output')}")
+                
+                # Handle function tool calls
+                function_details = call.get("function", {})
+                if function_details and function_details.get("name") == "get_current_time":
+                    logger.info(f"get_current_time function called")
+                    
         return None
 
 @router.get("/", response_class=HTMLResponse)
@@ -192,35 +227,34 @@ async def index(request: Request, _ = auth_dependency):
 
 
 async def get_result(
-    request: Request, 
-    thread_id: str, 
-    agent_id: str, 
+    request: Request,
+    thread_id: str,
+    agent_id: str,
     ai_project: AIProjectClient,
-    app_insight_conn_str: Optional[str], 
-    carrier: Dict[str, str]
+    app_insight_conn_str: Optional[str],
+    carrier: Dict[str, str],
 ) -> AsyncGenerator[str, None]:
     ctx = TraceContextTextMapPropagator().extract(carrier=carrier)
-    with tracer.start_as_current_span('get_result', context=ctx):
+    with tracer.start_as_current_span("get_result", context=ctx):
         logger.info(f"get_result invoked for thread_id={thread_id} and agent_id={agent_id}")
-        try:
-            agent_client = ai_project.agents
-            async with await agent_client.runs.stream(
-                thread_id=thread_id, 
-                agent_id=agent_id,
-                event_handler=MyEventHandler(ai_project, app_insight_conn_str),
-            ) as stream:
-                logger.info("Successfully created stream; starting to process events")
-                async for event in stream:
-                    _, _, event_func_return_val = event
-                    logger.debug(f"Received event: {event}")
-                    if event_func_return_val:
-                        logger.info(f"Yielding event: {event_func_return_val}")
-                        yield event_func_return_val
-                    else:
-                        logger.debug("Event received but no data to yield")
-        except Exception as e:
-            logger.exception(f"Exception in get_result: {e}")
-            yield serialize_sse_event({'type': "error", 'message': str(e)})
+
+        agent_client = ai_project.agents
+        
+        event_handler = MyEventHandler(ai_project, app_insight_conn_str)
+        
+        async with await agent_client.runs.stream(
+            thread_id=thread_id,
+            agent_id=agent_id,
+            event_handler=event_handler
+        ) as stream:
+            logger.info("Stream opened")
+            async for event in stream:
+                event_type, data, payload = event
+
+                if payload:
+                    logger.info(f"Yielding event: {payload}")
+                    yield payload
+
 
 
 @router.get("/chat/history")
@@ -344,6 +378,7 @@ async def chat(
 
         # Create the streaming response using the generator.
         response = StreamingResponse(get_result(request, thread_id, agent_id, ai_project, app_insights_conn_str, carrier), headers=headers)
+        
 
         # Update cookies to persist the thread and agent IDs.
         response.set_cookie("thread_id", thread_id)

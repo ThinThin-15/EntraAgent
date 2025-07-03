@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
 from logging_config import configure_logging
+from .function_tools import user_functions
 
 enable_trace = False
 logger = None

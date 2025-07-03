@@ -78,7 +78,6 @@ async def run_red_team():
                     if msg.text_messages:
                         return msg.text_messages[0].text.value
                 return "Could not get a response from the agent."
-        
 
             # Print agent details to verify correct targeting
             print(f"Running Red Team evaluation against agent:")
@@ -86,21 +85,38 @@ async def run_red_team():
             print(f"  - Agent Name: {agent.name}")
             print(f"  - Using Model: {deployment_name}")
             
+            # Include all available risk categories for comprehensive testing
             red_team = RedTeam(
                 azure_ai_project=project_endpoint,
                 credential=credential,
-                risk_categories=[RiskCategory.Violence],
-                num_objectives=1,
+                # Test all risk categories for comprehensive security evaluation
+                risk_categories=[
+                    RiskCategory.HateUnfairness,
+                    RiskCategory.Violence,
+                    RiskCategory.Sexual,
+                    RiskCategory.SelfHarm
+                ],
+                # Increase number of objectives per category for better coverage
+                num_objectives=3,
                 output_dir="redteam_outputs/"
             )
 
-            print("Starting Red Team scan...")
+            print("Starting Red Team scan with multiple risk categories and attack strategies...")
             result = await red_team.scan(
                 target=agent_callback,
-                scan_name="Agent-Scan",
-                attack_strategies=[AttackStrategy.Flip],
+                scan_name="Comprehensive-Agent-Security-Scan",
+                # Use multiple valid attack strategies to test different vulnerability vectors
+                attack_strategies=[
+                    AttackStrategy.Flip,            # Attempt to flip model behavior
+                    AttackStrategy.Jailbreak,       # Try to bypass safety measures
+                    AttackStrategy.Base64,          # Encode harmful content in base64
+                    AttackStrategy.UnicodeConfusable, # Use confusable Unicode characters
+                    AttackStrategy.ROT13,           # Simple letter substitution cipher
+                    AttackStrategy.AsciiArt         # Hide prompts in ASCII art
+                ],
             )
             print("Red Team scan complete.")
+            print(f"Results saved to: {os.path.abspath('redteam_outputs/')}")
 
 if __name__ == "__main__":
     import asyncio

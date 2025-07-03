@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import asyncio
 import csv
+import datetime
 import json
 import logging
 import multiprocessing
@@ -18,6 +19,7 @@ from azure.ai.agents.models import (
     AzureAISearchTool,
     FilePurpose,
     FileSearchTool,
+    AsyncFunctionTool,
     Tool,
 )
 from azure.ai.projects.models import ConnectionType, ApiKeyCredentials
@@ -27,6 +29,7 @@ from azure.core.credentials_async import AsyncTokenCredential
 from dotenv import load_dotenv
 
 from logging_config import configure_logging
+from api.function_tools import async_function_tool
 
 load_dotenv()
 
@@ -171,7 +174,11 @@ async def create_agent(ai_client: AIProjectClient,
     toolset = AsyncToolSet()
     toolset.add(tool)
     
+    # Add async function tool for current time
+    toolset.add(async_function_tool)
+    
     instructions = "Use AI Search always. Avoid to use base knowledge." if isinstance(tool, AzureAISearchTool) else "Use File Search always.  Avoid to use base knowledge."
+    instructions += " You can also provide the current time when asked using the get_current_time function."
     
     agent = await ai_client.agents.create_agent(
         model=os.environ["AZURE_AI_AGENT_DEPLOYMENT_NAME"],
