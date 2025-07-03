@@ -533,7 +533,7 @@ export function AgentPreview({ agentDetails }: IAgentPreviewProps): ReactNode {
                   </Caption1>
                   <Title3>👋 Welcome to Entra Agent!
 Your assistant for monitoring, detecting, and remediating risks across your Microsoft Entra environment.
-Ask me to show risky users, check unprotected devices, or help remediate sign-in risks—I’m here to help you stay secure and informed.</Title3>
+Ask me to show risky users, check unprotected devices, or help remediate sign-in risks here to help you stay secure and informed.</Title3>
                 </div>
               )}
               <AgentPreviewChatBot
